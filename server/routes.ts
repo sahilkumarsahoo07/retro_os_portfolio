@@ -1,16 +1,82 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import type { Server } from "http";
 import { storage } from "./storage";
+import { api } from "@shared/routes";
+import { z } from "zod";
+import { db } from "./db";
+import { projects, gallery } from "@shared/schema";
+
+async function seedDatabase() {
+  const existingProjects = await storage.getProjects();
+  if (existingProjects.length === 0) {
+    await db.insert(projects).values([
+      {
+        title: "Retro OS Portfolio",
+        description: "A Windows 95 inspired personal website built with React and Tailwind CSS.",
+        tech: "React, TypeScript, Tailwind",
+        link: "https://github.com",
+        order: 1
+      },
+      {
+        title: "Space Invaders Clone",
+        description: "A web-based clone of the classic arcade game Space Invaders.",
+        tech: "HTML5 Canvas, JS",
+        link: "https://github.com",
+        order: 2
+      },
+      {
+        title: "Music Visualizer",
+        description: "Audio visualization tool using the Web Audio API.",
+        tech: "Web Audio API, React",
+        link: "https://github.com",
+        order: 3
+      }
+    ]);
+  }
+
+  const existingGallery = await storage.getGalleryImages();
+  if (existingGallery.length === 0) {
+    await db.insert(gallery).values([
+      { title: "Vaporwave sunset", url: "https://images.unsplash.com/photo-1614850715649-1d0106293bd1?q=80&w=2070", order: 1 },
+      { title: "Retro arcade", url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070", order: 2 },
+      { title: "Cyberpunk city", url: "https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070", order: 3 },
+      { title: "Old computer", url: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070", order: 4 },
+    ]);
+  }
+}
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Seed initial data
+  seedDatabase().catch(console.error);
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  app.get(api.projects.list.path, async (req, res) => {
+    const allProjects = await storage.getProjects();
+    res.status(200).json(allProjects);
+  });
+
+  app.get(api.gallery.list.path, async (req, res) => {
+    const allGalleryImages = await storage.getGalleryImages();
+    res.status(200).json(allGalleryImages);
+  });
+
+  app.post(api.messages.create.path, async (req, res) => {
+    try {
+      const input = api.messages.create.input.parse(req.body);
+      const message = await storage.createMessage(input);
+      res.status(201).json(message);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
 
   return httpServer;
 }
