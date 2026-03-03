@@ -167,6 +167,7 @@ interface OSContextType {
   updateDesktopItem: (id: string, updates: Partial<DesktopItem>) => void;
   deleteDesktopItem: (id: string | string[]) => void;
   refreshDesktop: () => void;
+  arrangeIcons: () => void;
   activeWindowId: AppID | null;
   soundEnabled: boolean;
   toggleSound: () => void;
@@ -199,7 +200,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
         type: 'app',
         iconUrl: APPS[id].iconUrl,
         x: 20,
-        y: 20 + (i * 70)
+        y: 20 + (i * 85)
       }));
   });
 
@@ -302,6 +303,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
   };
 
   const updateWindowPosition = (id: AppID, x: number, y: number) => {
+    if (isNaN(x) || isNaN(y)) return;
     setWindows(prev => prev.map(w => w.id === id ? { ...w, x, y } : w));
   };
 
@@ -330,6 +332,28 @@ export function OSProvider({ children }: { children: ReactNode }) {
     setRefreshKey(prev => prev + 1);
   };
 
+  const arrangeIcons = () => {
+    setDesktopItems(prev => {
+      const gridX = 85;
+      const gridY = 85;
+      const startX = 20;
+      const startY = 20;
+      const maxH = window.innerHeight - 80;
+
+      return prev.map((item, i) => {
+        const iconsPerCol = Math.floor(maxH / gridY);
+        const col = Math.floor(i / iconsPerCol);
+        const row = i % iconsPerCol;
+
+        return {
+          ...item,
+          x: startX + (col * gridX),
+          y: startY + (row * gridY)
+        };
+      });
+    });
+  };
+
   const toggleSound = () => setSoundEnabled(prev => !prev);
 
   return (
@@ -350,11 +374,15 @@ export function OSProvider({ children }: { children: ReactNode }) {
       updateDesktopItem,
       deleteDesktopItem,
       refreshDesktop,
+      arrangeIcons,
       activeWindowId,
       soundEnabled,
       toggleSound
     }}>
-      <div key={refreshKey} className="theme-win98 contents">
+      <div
+        key={refreshKey}
+        className="theme-win98 contents"
+      >
         {children}
       </div>
     </OSContext.Provider>

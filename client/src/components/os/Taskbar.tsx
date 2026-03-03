@@ -18,7 +18,7 @@ export default function Taskbar() {
   return (
     <>
       <div
-        className="fixed bottom-0 left-0 right-0 h-[28px] z-[9999] flex items-center px-[2px] justify-between bg-[#c0c0c0] border-t border-white"
+        className="w-full h-[28px] z-[9999] flex items-center px-[2px] justify-between bg-[#c0c0c0] border-t border-white shrink-0"
       >
 
         <div className="flex items-center gap-1 h-full py-[1px]">

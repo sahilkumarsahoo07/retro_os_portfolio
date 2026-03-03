@@ -9,7 +9,7 @@ interface ContextMenuProps {
 
 export default function ContextMenu({ x, y, onClose }: ContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
-    const { refreshDesktop, addDesktopItem } = useOS();
+    const { refreshDesktop, arrangeIcons, addDesktopItem } = useOS();
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -23,10 +23,10 @@ export default function ContextMenu({ x, y, onClose }: ContextMenuProps) {
 
     const menuItems = [
         { label: 'View', hasSubmenu: true },
-        { label: 'Arrange IconsBy', hasSubmenu: true },
-        { label: 'Line Up Icons' },
+        { label: 'Arrange Icons', onClick: () => arrangeIcons() },
+        { label: 'Line Up Icons', onClick: () => arrangeIcons() },
         { type: 'separator' },
-        { label: 'Refresh', onClick: () => refreshDesktop() },
+        { label: 'Refresh', onClick: () => { arrangeIcons(); refreshDesktop(); } },
         { type: 'separator' },
         { label: 'Paste' },
         { label: 'Paste Shortcut', disabled: true },

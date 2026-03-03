@@ -14,23 +14,19 @@ export default function Window({ windowState }: { windowState: WindowState }) {
     updateWindowPosition,
   } = useOS();
 
+  const windowRef = useRef<HTMLDivElement>(null);
   const app = APPS[windowState.id];
   const isActive = activeWindowId === windowState.id;
   const isMaximized = windowState.isMaximized;
 
-  const windowRef = useRef<HTMLDivElement>(null);
-
-  // Local state for size
   const [localSize, setLocalSize] = useState({
     width: windowState.width || (app?.defaultWidth || 600),
     height: windowState.height || (app?.defaultHeight || 450)
   });
 
   const [isResizing, setIsResizing] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-
-  // Refs for dragging to avoid stale closure issues and minimize lag
-  const dragStart = useRef({ mouseX: 0, mouseY: 0, windowX: 0, windowY: 0 });
+  // Use a ref instead of state to track dragging — avoids re-render that causes flicker
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     if (windowState.width && windowState.height) {
@@ -38,7 +34,71 @@ export default function Window({ windowState }: { windowState: WindowState }) {
     }
   }, [windowState.width, windowState.height]);
 
-  // --- Resize Logic ---
+  // --- High Precision Direct-DOM Dragging ---
+  const handleDragStart = (e: React.PointerEvent) => {
+    if (isMaximized || isResizing || (e.target as HTMLElement).closest('button')) return;
+
+    e.preventDefault();
+    focusWindow(windowState.id);
+
+    const winEl = windowRef.current;
+    if (!winEl) return;
+
+    // ✅ FIX: Immediately pin the element's style position to its CURRENT position
+    // This must happen BEFORE we do anything else, so Framer Motion never sees a gap
+    const currentLeft = windowState.x ?? 0;
+    const currentTop = windowState.y ?? 0;
+    winEl.style.left = `${currentLeft}px`;
+    winEl.style.top = `${currentTop}px`;
+
+    isDraggingRef.current = true;
+
+    // Capture pointer to ensure we get moves even if cursor leaves window
+    winEl.setPointerCapture(e.pointerId);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (!desktopRef.current || !winEl) return;
+
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+
+      let newLeft = currentLeft + deltaX;
+      let newTop = currentTop + deltaY;
+
+      // Clamping logic
+      const desktopRect = desktopRef.current.getBoundingClientRect();
+      const winWidth = winEl.offsetWidth;
+      const winHeight = winEl.offsetHeight;
+
+      newLeft = Math.max(0, Math.min(newLeft, desktopRect.width - winWidth));
+      newTop = Math.max(0, Math.min(newTop, desktopRect.height - winHeight));
+
+      // DIRECT DOM UPDATE: Bypass React state for 1:1 tracking
+      winEl.style.left = `${newLeft}px`;
+      winEl.style.top = `${newTop}px`;
+    };
+
+    const onPointerUp = (upEvent: PointerEvent) => {
+      isDraggingRef.current = false;
+
+      // Sync final position back to global state
+      const finalLeft = parseInt(winEl.style.left);
+      const finalTop = parseInt(winEl.style.top);
+      updateWindowPosition(windowState.id, finalLeft, finalTop);
+
+      try { winEl.releasePointerCapture(upEvent.pointerId); } catch { }
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+
+  // --- Resize logic ---
   const handleResizeStart = (e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -61,64 +121,13 @@ export default function Window({ windowState }: { windowState: WindowState }) {
     const onPointerUp = (upEvent: PointerEvent) => {
       setIsResizing(false);
       updateWindowSize(windowState.id, localSize.width, localSize.height);
-      (upEvent.target as HTMLElement).releasePointerCapture(upEvent.pointerId);
+      try { (upEvent.target as HTMLElement).releasePointerCapture(upEvent.pointerId); } catch { }
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
     };
 
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
-  };
-
-  // --- Drag Logic ---
-  const handleDragStart = (e: React.PointerEvent) => {
-    if (isMaximized || isResizing) return;
-    if ((e.target as HTMLElement).closest('button')) return;
-
-    setIsDragging(true);
-    focusWindow(windowState.id);
-
-    // Use capture on the titlebar to ensure we receive moves even if fast
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-
-    dragStart.current = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      windowX: windowState.x || 0,
-      windowY: windowState.y || 0
-    };
-  };
-
-  const handleDragMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-
-    const desktop = desktopRef.current;
-    if (!desktop) return;
-
-    const desktopRect = desktop.getBoundingClientRect();
-
-    // Use actual element size for clamping, fallback to localSize
-    const windowWidth = windowRef.current?.offsetWidth || localSize.width;
-    const windowHeight = windowRef.current?.offsetHeight || localSize.height;
-
-    // Delta calculation is much more stable than absolute clientX
-    const deltaX = e.clientX - dragStart.current.mouseX;
-    const deltaY = e.clientY - dragStart.current.mouseY;
-
-    let newX = dragStart.current.windowX + deltaX;
-    let newY = dragStart.current.windowY + deltaY;
-
-    // Strict clamping within desktop boundaries
-    newX = Math.max(0, Math.min(newX, desktopRect.width - windowWidth));
-    newY = Math.max(0, Math.min(newY, desktopRect.height - windowHeight));
-
-    updateWindowPosition(windowState.id, newX, newY);
-  };
-
-  const handleDragEnd = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
   if (!windowState.isOpen || windowState.isMinimized) return null;
@@ -132,43 +141,43 @@ export default function Window({ windowState }: { windowState: WindowState }) {
         scale: 1,
         width: isMaximized ? '100%' : localSize.width,
         height: isMaximized ? '100%' : localSize.height,
-        left: isMaximized ? 0 : windowState.x,
-        top: isMaximized ? 0 : windowState.y,
-        x: 0,
-        y: 0
+        // ✅ FIX: Always pass a valid number — never undefined.
+        // During dragging, style.left/top is controlled by direct DOM, but Framer Motion
+        // still needs a value here so it doesn't animate to 0. We keep passing the last
+        // known state position; the inline style set during drag overrides it with no flicker.
+        left: isMaximized ? 0 : (windowState.x ?? 0),
+        top: isMaximized ? 0 : (windowState.y ?? 0),
       }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{
-        duration: isDragging ? 0 : 0.1,
-        width: { duration: 0.15 },
-        height: { duration: 0.15 },
-        left: { duration: isDragging ? 0 : 0.15 },
-        top: { duration: isDragging ? 0 : 0.15 }
+        duration: 0.12,
+        width: { duration: isResizing ? 0 : 0.12 },
+        height: { duration: isResizing ? 0 : 0.12 },
+        // Snap position instantly — no sliding animation on position changes
+        left: { duration: 0 },
+        top: { duration: 0 }
       }}
       style={{
         zIndex: windowState.zIndex,
         position: 'absolute',
         pointerEvents: 'auto',
-        willChange: isDragging ? 'left, top' : 'auto',
-        touchAction: 'none' // Prevent browser gestures during drag
+        touchAction: 'none',
+        boxSizing: 'border-box'
       }}
-      className="win98-window shadow-[4px_4px_15px_rgba(0,0,0,0.4)] flex flex-col"
+      className="win98-window shadow-[4px_4px_15px_rgba(0,0,0,0.4)] flex flex-col will-change-[left,top]"
       onPointerDown={() => focusWindow(windowState.id)}
     >
-      {/* Titlebar */}
+      {/* Titlebar acts as the drag handle */}
       <div
         className={`h-[18px] px-1 py-[2px] m-[2px] flex items-center justify-between select-none 
           ${isActive ? 'bg-[#000080]' : 'bg-[#808080]'}
           ${isMaximized ? '' : 'cursor-default'}`}
         onPointerDown={handleDragStart}
-        onPointerMove={handleDragMove}
-        onPointerUp={handleDragEnd}
         onDoubleClick={() => toggleMaximize(windowState.id)}
-        style={{ touchAction: 'none' }}
       >
-        <div className="flex items-center gap-1 overflow-hidden">
+        <div className="flex items-center gap-1 overflow-hidden pointer-events-none text-white">
           {app?.iconUrl && <img src={app.iconUrl} alt="" className="w-4 h-4 pixelated flex-shrink-0" />}
-          <span className="text-white text-[11px] font-bold truncate leading-tight mt-[1px]">
+          <span className="text-[11px] font-bold truncate leading-tight mt-[1px]">
             {app?.title || 'Unknown App'}
           </span>
         </div>
@@ -177,7 +186,6 @@ export default function Window({ windowState }: { windowState: WindowState }) {
           <button
             onClick={() => minimizeWindow(windowState.id)}
             className="win98-button w-[14px] h-[14px] flex items-center justify-center p-0"
-            aria-label="Minimize"
           >
             <svg width="6" height="2" viewBox="0 0 6 2" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-[6px]">
               <rect width="6" height="2" fill="black" />
@@ -187,7 +195,6 @@ export default function Window({ windowState }: { windowState: WindowState }) {
           <button
             onClick={() => toggleMaximize(windowState.id)}
             className="win98-button w-[14px] h-[14px] flex items-center justify-center p-0"
-            aria-label={isMaximized ? "Restore" : "Maximize"}
           >
             {isMaximized ? (
               <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -214,7 +221,6 @@ export default function Window({ windowState }: { windowState: WindowState }) {
           <button
             onClick={(e) => { e.stopPropagation(); closeWindow(windowState.id); }}
             className="win98-button w-[14px] h-[14px] flex items-center justify-center p-0"
-            aria-label="Close"
           >
             <svg width="8" height="7" viewBox="0 0 8 7" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M0 0H2V1H3V2H5V1H6V0H8V1H7V2H6V3H5V4H6V5H7V6H8V7H6V6H5V5H3V6H2V7H0V6H1V5H2V4H3V3H2V2H1V1H0V0Z" fill="black" />
