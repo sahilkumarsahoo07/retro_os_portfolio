@@ -1,15 +1,28 @@
-import React, { useRef, useEffect } from 'react';
-import { useOS } from './OSProvider';
+import React, { useRef, useEffect, useState } from 'react';
+import { useOS, AppID } from './OSProvider';
 
 interface ContextMenuProps {
     x: number;
     y: number;
+    targetItemId?: string | null;
     onClose: () => void;
 }
 
-export default function ContextMenu({ x, y, onClose }: ContextMenuProps) {
+interface MenuItem {
+    label?: string;
+    onClick?: () => void;
+    hasSubmenu?: boolean;
+    submenuItems?: MenuItem[];
+    disabled?: boolean;
+    bold?: boolean;
+    type?: 'separator';
+}
+
+export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
-    const { refreshDesktop, arrangeIcons, addDesktopItem } = useOS();
+    const { refreshDesktop, arrangeIcons, addDesktopItem, deleteDesktopItem, updateDesktopItem, openWindow, desktopItems } = useOS();
+    const [activeSubmenu, setActiveSubmenu] = useState<number | null>(null);
+    const submenuTimer = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -21,43 +34,109 @@ export default function ContextMenu({ x, y, onClose }: ContextMenuProps) {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
-    const menuItems = [
-        { label: 'View', hasSubmenu: true },
+    const handleNewFolder = () => {
+        const id = addDesktopItem({
+            name: 'New Folder',
+            type: 'folder',
+            x: x,
+            y: y,
+            isRenaming: true
+        });
+        onClose();
+    };
+
+    const handleNewTextFile = () => {
+        addDesktopItem({
+            name: 'New Text Document.txt',
+            type: 'file',
+            x: x,
+            y: y,
+            isRenaming: true
+        });
+        onClose();
+    };
+
+    const desktopMenuItems: MenuItem[] = [
+        { label: 'View', hasSubmenu: true, disabled: true },
         { label: 'Arrange Icons', onClick: () => arrangeIcons() },
         { label: 'Line Up Icons', onClick: () => arrangeIcons() },
         { type: 'separator' },
         { label: 'Refresh', onClick: () => { arrangeIcons(); refreshDesktop(); } },
         { type: 'separator' },
-        { label: 'Paste' },
+        { label: 'Paste', disabled: true },
         { label: 'Paste Shortcut', disabled: true },
         { type: 'separator' },
-        { label: 'New', hasSubmenu: true, onClick: () => addDesktopItem({ name: 'New Folder', type: 'folder' }) },
+        {
+            label: 'New',
+            hasSubmenu: true,
+            submenuItems: [
+                { label: 'Folder', onClick: handleNewFolder },
+                { label: 'Shortcut', disabled: true },
+                { type: 'separator' },
+                { label: 'Text Document', onClick: handleNewTextFile },
+                { label: 'Bitmap Image', disabled: true },
+            ]
+        },
         { type: 'separator' },
-        { label: 'Properties', bold: true },
+        { label: 'Properties', bold: true, disabled: true },
     ];
+
+    const targetItem = desktopItems.find(i => i.id === targetItemId);
+
+    const iconMenuItems: MenuItem[] = [
+        { label: 'Open', bold: true, onClick: () => { if (targetItem?.appId) openWindow(targetItem.appId as AppID); onClose(); } },
+        { label: 'Explore', disabled: true },
+        { label: 'Find...', disabled: true },
+        { type: 'separator' },
+        { label: 'Send To', hasSubmenu: true, disabled: true },
+        { type: 'separator' },
+        { label: 'Cut', disabled: true },
+        { label: 'Copy', disabled: true },
+        { type: 'separator' },
+        { label: 'Create Shortcut', disabled: true },
+        { label: 'Delete', onClick: () => { if (targetItemId) deleteDesktopItem(targetItemId); onClose(); } },
+        { label: 'Rename', onClick: () => { if (targetItemId) updateDesktopItem(targetItemId, { isRenaming: true }); onClose(); } },
+        { type: 'separator' },
+        { label: 'Properties', disabled: true },
+    ];
+
+    const menuItems = targetItemId ? iconMenuItems : desktopMenuItems;
+
+    const handleMouseEnter = (index: number) => {
+        if (submenuTimer.current) clearTimeout(submenuTimer.current);
+        setActiveSubmenu(index);
+    };
+
+    const handleMouseLeave = () => {
+        submenuTimer.current = setTimeout(() => {
+            setActiveSubmenu(null);
+        }, 300);
+    };
 
     return (
         <div
             ref={menuRef}
             className="win98-menu"
-            style={{ left: x, top: y }}
+            style={{ left: x, top: y, position: 'fixed', zIndex: 9999 }}
+            onMouseLeave={handleMouseLeave}
         >
             <div className="win98-menu-inner">
                 {menuItems.map((item, i) => {
                     if (item.type === 'separator') {
                         return <div key={i} className="win98-menu-separator" />;
                     }
+                    const isActive = activeSubmenu === i;
                     return (
                         <div
                             key={i}
-                            className={`win98-menu-item ${item.disabled ? 'disabled' : ''} ${item.bold ? 'font-bold' : ''}`}
+                            className={`win98-menu-item ${item.disabled ? 'disabled' : ''} ${item.bold ? 'font-bold' : ''} ${isActive && item.hasSubmenu ? 'active' : ''}`}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (!item.disabled) {
-                                    if (item.onClick) item.onClick();
-                                    onClose();
+                                if (!item.disabled && item.onClick) {
+                                    item.onClick();
                                 }
                             }}
+                            onMouseEnter={() => handleMouseEnter(i)}
                         >
                             <span>{item.label}</span>
                             {item.hasSubmenu && (
@@ -66,6 +145,31 @@ export default function ContextMenu({ x, y, onClose }: ContextMenuProps) {
                                         <path d="M0 0V7L4 3.5L0 0Z" fill="currentColor" />
                                     </svg>
                                 </span>
+                            )}
+                            {item.hasSubmenu && item.submenuItems && isActive && (
+                                <div className="win98-menu win98-submenu" style={{ left: '100%', top: -2 }}>
+                                    <div className="win98-menu-inner">
+                                        {item.submenuItems.map((subItem, si) => {
+                                            if (subItem.type === 'separator') {
+                                                return <div key={si} className="win98-menu-separator" />;
+                                            }
+                                            return (
+                                                <div
+                                                    key={si}
+                                                    className={`win98-menu-item ${subItem.disabled ? 'disabled' : ''}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!subItem.disabled && subItem.onClick) {
+                                                            subItem.onClick();
+                                                        }
+                                                    }}
+                                                >
+                                                    <span>{subItem.label}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             )}
                         </div>
                     );

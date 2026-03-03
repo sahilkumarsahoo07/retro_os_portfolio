@@ -20,6 +20,7 @@ export interface DesktopItem {
   iconUrl: string;
   x: number;
   y: number;
+  isRenaming?: boolean;
 }
 
 export interface AppDefinition {
@@ -163,7 +164,7 @@ interface OSContextType {
   updateWindowPosition: (id: AppID, x: number, y: number) => void;
   desktopItems: DesktopItem[];
   setDesktopItems: React.Dispatch<React.SetStateAction<DesktopItem[]>>;
-  addDesktopItem: (item: Partial<DesktopItem>) => void;
+  addDesktopItem: (item: Partial<DesktopItem>) => string;
   updateDesktopItem: (id: string, updates: Partial<DesktopItem>) => void;
   deleteDesktopItem: (id: string | string[]) => void;
   refreshDesktop: () => void;
@@ -308,15 +309,18 @@ export function OSProvider({ children }: { children: ReactNode }) {
   };
 
   const addDesktopItem = (item: Partial<DesktopItem>) => {
-    setDesktopItems(prev => [...prev, {
-      id: uuidv4(),
+    const id = uuidv4();
+    setDesktopItems(prev => [...prev.map(i => ({ ...i, isRenaming: false })), {
+      id,
       name: item.name || 'New Item',
       type: item.type || 'folder',
       iconUrl: item.iconUrl || 'https://win98icons.alexmeub.com/icons/png/directory_closed-4.png',
       x: item.x || 100,
       y: item.y || 100,
+      isRenaming: item.isRenaming || false,
       ...item
     }]);
+    return id;
   };
 
   const updateDesktopItem = (id: string, updates: Partial<DesktopItem>) => {

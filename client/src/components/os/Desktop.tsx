@@ -58,15 +58,32 @@ export default function Desktop() {
   } = useOS();
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; targetItemId?: string | null } | null>(null);
   const [selection, setSelection] = useState<{
     startX: number; startY: number; endX: number; endY: number;
   } | null>(null);
   const isSelecting = useRef(false);
+  const lastClickTime = useRef<{ [id: string]: number }>({});
+
+  const handleRename = (id: string, newName: string) => {
+    if (newName.trim()) {
+      updateDesktopItem(id, { name: newName, isRenaming: false });
+    } else {
+      updateDesktopItem(id, { isRenaming: false });
+    }
+  };
 
   // ── Lasso selection ──────────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || e.target !== desktopRef.current) return;
+
+    // Save any active renames
+    desktopItems.forEach(item => {
+      if (item.isRenaming) {
+        updateDesktopItem(item.id, { isRenaming: false });
+      }
+    });
+
     setSelectedItems([]);
     isSelecting.current = true;
     const rect = desktopRef.current!.getBoundingClientRect();
@@ -192,7 +209,10 @@ export default function Desktop() {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY }); }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY, targetItemId: null });
+      }}
     >
       {/* Lasso selection rect */}
       {selection && (
@@ -213,6 +233,8 @@ export default function Desktop() {
       <div className="absolute inset-0 select-none z-10 pointer-events-none">
         {desktopItems.map((item) => {
           const isSelected = selectedItems.includes(item.id);
+          const isRenaming = item.isRenaming;
+
           return (
             <div
               key={item.id}
@@ -223,26 +245,44 @@ export default function Desktop() {
                 width: CELL_W - 10,
                 touchAction: 'none',
                 // Smooth slide when displaced by another icon
-                transition: 'left 0.15s ease, top 0.15s ease',
+                transition: isRenaming ? 'none' : 'left 0.15s ease, top 0.15s ease',
               }}
               className="flex flex-col items-center cursor-default pointer-events-auto"
               onPointerDown={(e) => {
-                if (e.button !== 0) return;
+                if (e.button !== 0 || isRenaming) return;
                 // Disable transition during active drag so it tracks cursor precisely
                 (e.currentTarget as HTMLElement).style.transition = 'none';
                 handleIconDragStart(e, item, e.currentTarget as HTMLElement);
               }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedItems([item.id]);
+                setContextMenu({ x: e.clientX, y: e.clientY, targetItemId: item.id });
+              }}
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedItems(prev =>
-                  e.ctrlKey
-                    ? prev.includes(item.id) ? prev.filter(i => i !== item.id) : [...prev, item.id]
-                    : [item.id]
-                );
+
+                const now = Date.now();
+                const lastClick = lastClickTime.current[item.id] || 0;
+                const delta = now - lastClick;
+
+                if (isSelected && delta > 500 && delta < 2000 && !isRenaming) {
+                  updateDesktopItem(item.id, { isRenaming: true });
+                } else {
+                  setSelectedItems(prev =>
+                    e.ctrlKey
+                      ? prev.includes(item.id) ? prev.filter(i => i !== item.id) : [...prev, item.id]
+                      : [item.id]
+                  );
+                }
+
+                lastClickTime.current[item.id] = now;
                 setContextMenu(null);
               }}
               onDoubleClick={(e) => {
                 e.stopPropagation();
+                if (isRenaming) return;
                 if (item.appId) openWindow(item.appId);
               }}
             >
@@ -254,9 +294,34 @@ export default function Desktop() {
                   className={`w-10 h-10 pointer-events-none pixelated ${isSelected ? 'brightness-50 sepia-100 hue-rotate-[200deg] saturate-200' : ''}`}
                 />
               </div>
-              <span className={`win98-icon-label ${isSelected ? 'win98-icon-label-selected' : ''}`}>
-                {item.name}
-              </span>
+
+              {isRenaming ? (
+                <input
+                  autoFocus
+                  className="win98-rename-input"
+                  defaultValue={item.name}
+                  onFocus={(e) => {
+                    const val = e.target.value;
+                    const dotIndex = val.lastIndexOf('.');
+                    e.target.setSelectionRange(0, dotIndex > 0 ? dotIndex : val.length);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRename(item.id, e.currentTarget.value);
+                    } else if (e.key === 'Escape') {
+                      updateDesktopItem(item.id, { isRenaming: false });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    handleRename(item.id, e.target.value);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span className={`win98-icon-label ${isSelected ? 'win98-icon-label-selected' : ''}`}>
+                  {item.name}
+                </span>
+              )}
             </div>
           );
         })}
@@ -273,7 +338,12 @@ export default function Desktop() {
 
       {/* Context Menu */}
       {contextMenu && (
-        <ContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)} />
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          targetItemId={contextMenu.targetItemId}
+          onClose={() => setContextMenu(null)}
+        />
       )}
     </div>
   );

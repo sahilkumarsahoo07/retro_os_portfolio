@@ -152,7 +152,7 @@
 }
 
 .theme-win98 .win98-menu-item {
-  @apply px-4 py-1 text-[11px] cursor-default flex items-center justify-between whitespace-nowrap;
+  @apply px-4 py-1 text-[11px] cursor-default flex items-center justify-between whitespace-nowrap relative;
   font-family: 'MS Sans Serif', 'Tahoma', Arial, sans-serif;
   color: #000000;
 }
@@ -162,7 +162,8 @@
   text-shadow: 1px 1px #ffffff;
 }
 
-.theme-win98 .win98-menu-item:not(.disabled):hover {
+.theme-win98 .win98-menu-item:not(.disabled):hover,
+.theme-win98 .win98-menu-item.active {
   @apply bg-[#000080] text-white;
 }
 
@@ -171,7 +172,18 @@
 }
 
 .theme-win98 .win98-submenu-arrow {
-  @apply ml-4 text-[7px];
+  @apply ml-4 text-[7px] flex items-center;
+}
+
+.theme-win98 .win98-submenu {
+  @apply left-full top-[-2px] ml-[-1px];
+}
+
+/* Rename Input */
+.theme-win98 .win98-rename-input {
+  @apply bg-white border border-black text-[11px] text-black text-center w-[120%] h-auto px-0.5 outline-none -mt-0.5 leading-none;
+  font-family: 'MS Sans Serif', 'Tahoma', Arial, sans-serif;
+  box-shadow: inset 1px 1px #808080;
 }
 
 /* Selection Rectangle */
