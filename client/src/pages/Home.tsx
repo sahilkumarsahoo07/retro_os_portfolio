@@ -8,19 +8,18 @@ export default function Home() {
   const [booted, setBooted] = useState(false);
 
   return (
-    <div className="h-screen w-full bg-black overflow-hidden relative">
-      <div className="crt-overlay" />
-      
-      {!booted ? (
-        <BootSequence onComplete={() => setBooted(true)} />
-      ) : (
-        <OSProvider>
+    <OSProvider>
+      <div className="h-screen w-full bg-black overflow-hidden relative">
+
+        {!booted ? (
+          <BootSequence onComplete={() => setBooted(true)} />
+        ) : (
           <div className="h-full w-full flex flex-col relative animate-in fade-in duration-1000">
             <Desktop />
             <Taskbar />
           </div>
-        </OSProvider>
-      )}
-    </div>
+        )}
+      </div>
+    </OSProvider>
   );
 }

@@ -1,41 +1,58 @@
-import { pgTable, text, serial, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import mongoose from "mongoose";
 
-export const projects = pgTable("projects", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  imageUrl: text("image_url"),
-  tech: text("tech"),
-  link: text("link"),
-  order: serial("order"),
+// Zod Schemas for validation
+export const insertProjectSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  imageUrl: z.string().optional(),
+  tech: z.string().optional(),
+  link: z.string().optional(),
+  order: z.number().optional(),
 });
 
-export const gallery = pgTable("gallery", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  url: text("url").notNull(),
-  order: serial("order"),
+export const insertGallerySchema = z.object({
+  title: z.string().min(1),
+  url: z.string().min(1),
+  order: z.number().optional(),
 });
 
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertMessageSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  content: z.string().min(1),
 });
 
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true });
-export const insertGallerySchema = createInsertSchema(gallery).omit({ id: true });
-export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
+export const profileSchema = z.object({
+  name: z.string(),
+  role: z.string(),
+  experience: z.string(),
+  bio: z.string(),
+  location: z.string(),
+});
 
-export type Project = typeof projects.$inferSelect;
+export const skillSchema = z.object({
+  name: z.string(),
+  level: z.number(),
+});
+
+export const experienceSchema = z.object({
+  title: z.string(),
+  company: z.string(),
+  duration: z.string(),
+  description: z.string(),
+});
+
+// Types
 export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = InsertProject & { id: string };
 
-export type GalleryImage = typeof gallery.$inferSelect;
 export type InsertGalleryImage = z.infer<typeof insertGallerySchema>;
+export type GalleryImage = InsertGalleryImage & { id: string };
 
-export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = InsertMessage & { id: string; createdAt: Date };
+
+export type Profile = z.infer<typeof profileSchema> & { id: string };
+export type Skill = z.infer<typeof skillSchema> & { id: string };
+export type Experience = z.infer<typeof experienceSchema> & { id: string };

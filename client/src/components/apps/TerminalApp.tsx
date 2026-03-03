@@ -6,24 +6,34 @@ export default function TerminalApp() {
     "Type 'help' for a list of available commands."
   ]);
   const [input, setInput] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // Scroll the terminal container to the bottom WITHOUT touching the page scroll
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = containerRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [history]);
+
+  // Focus the input without scrolling the page
+  useEffect(() => {
+    inputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const handleCommand = (cmd: string) => {
     const trimmed = cmd.trim();
     if (!trimmed) return;
-    
+
     setHistory(prev => [...prev, `> ${trimmed}`]);
-    
+
     const parts = trimmed.toLowerCase().split(' ');
     const command = parts[0];
     const args = parts.slice(1);
 
     let output = '';
-    
+
     switch (command) {
       case 'help':
         output = "Available commands: \n- help\n- clear\n- echo [text]\n- whoami\n- date\n- matrix";
@@ -63,7 +73,10 @@ export default function TerminalApp() {
   };
 
   return (
-    <div className="p-4 h-full bg-black font-body text-xl text-green-500 overflow-y-auto crt-flicker">
+    <div
+      ref={containerRef}
+      className="p-4 h-full bg-black font-body text-xl text-green-500 overflow-y-auto crt-flicker"
+    >
       <div className="whitespace-pre-wrap">
         {history.map((line, i) => (
           <div key={i}>{line}</div>
@@ -72,15 +85,14 @@ export default function TerminalApp() {
       <div className="flex mt-2">
         <span className="mr-2">{'>'}</span>
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           className="flex-1 bg-transparent outline-none text-green-500 font-body shadow-none focus:ring-0"
-          autoFocus
         />
       </div>
-      <div ref={bottomRef} />
     </div>
   );
 }

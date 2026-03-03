@@ -1,186 +1,181 @@
-@import url('https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;700&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=MS+Sans+Serif&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-display: 'Silkscreen', monospace;
-  --font-body: 'VT323', monospace;
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Inter', sans-serif;
 
-  /* Synthwave / Vaporwave Palette */
-  --background: 260 60% 10%; /* Deep Purple #1a0b2e */
-  --foreground: 300 100% 90%; /* Light Pink #f0b3f0 */
-  
-  --primary: 300 100% 60%; /* Neon Pink #ff33ff */
-  --primary-foreground: 0 0% 100%;
-  
-  --secondary: 180 100% 50%; /* Neon Cyan #00ffff */
-  --secondary-foreground: 260 60% 10%;
+  --primary: 300 100% 60%;
+  /* Neon Pink */
+  --secondary: 180 100% 50%;
+  /* Neon Cyan */
+  --accent: 280 100% 60%;
+  /* Neon Purple */
 
-  --muted: 260 40% 20%;
-  --muted-foreground: 280 40% 70%;
-
-  --accent: 45 100% 50%; /* Neon Yellow #ffd700 */
-  --accent-foreground: 260 60% 10%;
-
-  --destructive: 0 100% 60%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 300 100% 60%;
-  --ring: 180 100% 50%;
-
-  --radius: 0px; /* Sharp retro corners */
+  --background: 260 80% 5%;
+  --foreground: 0 0% 100%;
 }
 
+/* --- Theme: Win98 --- */
+.theme-win98 {
+  --font-display: 'MS Sans Serif', 'Tahoma', 'Arial', sans-serif;
+  --font-body: 'MS Sans Serif', 'Tahoma', 'Arial', sans-serif;
+  --win-gray: #c0c0c0;
+  --win-white: #ffffff;
+  --win-dark-gray: #808080;
+  --win-black: #000000;
+  --win-blue: #000080;
+  --win-teal: #008080;
+}
+
+.theme-win98 body {
+  background-color: #008080;
+  color: #000;
+  font-family: var(--font-body);
+  /* Classic Arrow */
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAYCAYAAAD9bx+IAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAd0lEQVR4nGNgGFjAOKiAAVmclZWNpIKBEZ9uRhzi+PTD6SAnJwNJDZ9uJB0kJSXx6UfSQWJiAp9+mC2YmJjApx9uCyYmRvDph9uCiYmRCH24LVhZWEjXh9uClZWVdH2ELVhYWEjXh9uClZWVdH2ELRhYIDKAgYFMBgAAHAYvAeeG/S0AAAAASUVORK5CYII='), default;
+}
+
+.theme-win98 a,
+.theme-win98 button,
+.theme-win98 [role="button"],
+.theme-win98 .cursor-pointer {
+  /* Classic Hand Pointer */
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAYCAYAAAD9bx+IAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAm0lEQVR4nO2VQQqCQBRFvxXRTidp4SaaoU0rN9BOH0Ldo0u0y42kW7SJRp2hK/QT/WwIdREK7fQj8mCYaBD9oOEHLz3m8Z6B+ccYI5x0XUvX9UhK17U46ZomVqGqSqSClK7pYBWkqkqkgpSu6WAVpKpKpIKUrukwC8CisAis/6OwCKwKKy4D8AhW4YnLADyCdZf8CMAmWImULvlpPwIwCWZ0TT/tRwBmIUrXdOg6P/1tD8C6pifT2CclUrrkr/0IwIiu6UlK/+0HsDmsm/YDP76E6L1CFr0AAAAASUVORK5CYII='), pointer;
+}
+
+.theme-win98 input,
+.theme-win98 textarea,
+.theme-win98 .cursor-text {
+  /* Classic I-Beam / Text Select (using system text for now as it's pixelated enough, or base64 if needed, but system 'text' usually suffices if styled)
+     Actually, let's use a base64 I-Beam for total accuracy. */
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAUCAYAAABbLMkEAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAWElEQVQokWNgwA0qoPz/UAwkwITPBUjixIInmBiG/2BiWBiGg2QxMAyhSBE0BxtgB+L/UHgUDyKk4eADRgYGBiZM14gVfwqXAjB+QjQAAK2nDx0D40lYDAAMKxkRSEn5cQAAAABJRU5ErkJggg==') 5 10, text;
+}
+
+.theme-win98 .cursor-wait {
+  /* Classic Hourglass */
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAXCAYAAAALHW+jAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA0UlEQVQ4y2NgGPqAEQv+zySExmdE4zPi0YxLE7rB/2H4//9/MM3IwMDAiE8Tshg2mzCMxWUTshg2mzDMxOUTvAHTl4AunxANmNHEhMRnROMz4jHqN6FpwC9cJiEax2eTKA2YfgR0+YQo4IRm8H8Y/v//Pwjd4P+EaMCMYiYkPiMaHxjBmzSiaUADsL74P5Pwwv8w/P//fwb1zWDsXgZ2NMMzivHT//8wzcjAwMCIbgc2PjOamJBUjWgeIFUvIFMvYBh2IuMzoqmZ1Dw1aoDRAADm7V7k2+36uAAAAABJRU5ErkJggg==') 10 11, wait;
+}
+
+.theme-win98 .cursor-move {
+  /* Classic Move (Four-way arrow) */
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA20lEQVQ4je2V0Q3CIBhGbwHcwS10B27hDtwB3IE7iCN0B3CE+2NKSWkvtbSJvuRLyA9/4OWSEK1rQpQ64AAcE5vAA0hNnAMzMCd2A1qS2YAXMBG5jFfgQGR1hT2BVX0K3IEOGAEH18BqQc8/gSOwADe/x1fXp11N6E2A/aQc4OARWG0Zf0tJ5M304Y692ZfY5yWyL7GryD4vB7gAG7AATt113e6E3iXY9Ltk0O+SQR8kgy5IBl2SDPo26E2ALw34cwbP8b3gK/i9wEewAybgtuF/gRnwBvIfT2k2nQ06t+13p+4AAAAASUVORK5CYII=') 11 11, move;
+}
+
+.theme-win98 .cursor-ns-resize {
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAXCAYAAAAGw/ZPAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAvklEQVQ4je2V0Q3CMAxErwEbgA3YgA3QEZgBG4AN2IAO0BHYAB2gI3CE92NKRZtGqWmjD33JVxJf/jhJCE2QEI8WWAH9zN4BR+AMrD1qD9w98ggcvcoZeAITcJpY98rB/B+gAdZeqZ/wvwHtgZtX2gFnjx4B28u7hXgBvUf1Z2rT/s1/q8h9Q5H7hiL3DQdyr1hL5vUFNh9s7M8hR+sX+7PIcUNp//rTfxqTz05LwM870/8D9sAZOJgA1sCpB6d36wU2D3n1f5o1kQAAAABJRU5ErkJggg==') 9 11, ns-resize;
+}
+
+.theme-win98 .cursor-ew-resize {
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAASCAYAAACw50UTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAuUlEQVQ4je2UzQ3CMAxG3wEbgA3aAdsBHIEjYAO0ARugDdoBGoEjcARH4H2sUFGTRv2ojT7pSqntH5+ctISUkhBxqYEFMDXsm8AGuAKHhrYBLg1rD9wavn3B+T1ADySNaAdcGlYB128Yy5FhN63i3zFsN60+gJv9r3T1k0U13M0LzR+A2/RkGdzNC80fgG+Tq9n18i3qG8uN4PjZ0NqI21sD9w1b11Z9+2e8D/AGBmA3vB1wAzZgaoR3w1HNB/nFe7i7n9eIAAAAAElFTkSuQmCC') 11 9, ew-resize;
+}
+
+.theme-win98 .cursor-nwse-resize {
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABCG7MBAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA0UlEQVQ4jd2U0Q3CIBhG3wHcwS10hHKEbcQRjMEtnMFHwBHYgDswg9+PKRVtGrWmjT7pS+B4vOAlITRDCfFqgQtwMuwNOAMb4GAoHjicugL6fC7ZARdwcNoFmIAZ2AFb4AKsjnIAZsc2gB5YPqF7zWqgB5xM6B6zXoAbMDoK0VlHIf6oSN2n3yuiyR1z2cQ15O/wE/gV5D1jVci/p8Jz2d/g+B4qFPI9/C0q2t5I2jW9fJ8j1r6eF3v5831/eXl70X+gN+ABTCZ0Jv1WwAOYDXsD3i24A8eDfo8AAAAASUVORK5CYII=') 9 9, nwse-resize;
+}
+
+.theme-win98 .cursor-nesw-resize {
+  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABCG7MBAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAy0lEQVQ4jd2U2w3CMAyGrwEbgA3YAB2BDdAB2qEboR2gI3QENkBDYITeQ6koTRolaqMneZKV/PjlpCGEQQlxZYENsHXMDrgCZ2A2FB24OE0FLvlcsgce4OJUO6ADFmAINsAFWBx5A0bHJoA2WD2hd00XoAX2Tuhd0xvwABpHOVprRzm+VISe028VUfMeY7lEK+TvwCv4EaQ1Y5WQvz0Vx7Ke4HAelQqFHA8/iopzN+KsU8mXOUKsq+eij58v96+nFyv6D7QHvoDJEEzjXwp8ABOhFzVfclgAAAAASUVORK5CYII=') 9 9, nesw-resize;
+}
+
+.theme-win98 .win98-outset {
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #808080, 1px 1px #000;
+  border: 1px solid #dfdfdf;
+}
+
+.theme-win98 .win98-inset {
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff, 1px 1px #dfdfdf;
+  border: 1px solid #000;
+  background-color: #fff;
+}
+
+.theme-win98 .win98-titlebar {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+}
+
+.theme-win98 .win98-window {
+  @apply bg-[#c0c0c0] border-t border-l border-white border-r-2 border-r-black border-b-2 border-b-black p-0.5 flex flex-col;
+}
+
+.theme-win98 .win98-button {
+  @apply bg-[#c0c0c0] px-2 py-0.5 border-t border-l border-white border-r-2 border-r-gray-800 border-b-2 border-b-gray-800 active:border-t-2 active:border-l-2 active:border-white active:border-r active:border-b active:border-gray-800 active:pt-1 active:pl-1 transition-none;
+}
+
+/* --- Global Overrides --- */
 @layer base {
-  body {
-    @apply bg-background text-foreground antialiased overflow-hidden select-none;
-    font-family: var(--font-body);
-    font-size: 1.25rem; /* VT323 needs to be slightly larger for readability */
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-    @apply tracking-wider;
+  * {
+    @apply border-border;
   }
 }
 
-@layer utilities {
-  .text-shadow-neon-pink {
-    text-shadow: 0 0 5px hsl(var(--primary)), 0 0 10px hsl(var(--primary));
-  }
-  .text-shadow-neon-cyan {
-    text-shadow: 0 0 5px hsl(var(--secondary)), 0 0 10px hsl(var(--secondary));
-  }
-  .box-shadow-neon-pink {
-    box-shadow: 0 0 10px hsl(var(--primary)/0.5), inset 0 0 10px hsl(var(--primary)/0.2);
-  }
-  .box-shadow-neon-cyan {
-    box-shadow: 0 0 10px hsl(var(--secondary)/0.5), inset 0 0 10px hsl(var(--secondary)/0.2);
-  }
-  
-  /* Custom scrollbar for retro feel */
-  ::-webkit-scrollbar {
-    width: 16px;
-    height: 16px;
-    background: #11091f;
-    border-left: 2px solid hsl(var(--primary));
-  }
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.8);
-    border: 2px solid hsl(var(--secondary));
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--secondary));
-    border: 2px solid hsl(var(--primary));
-  }
-  ::-webkit-scrollbar-corner {
-    background: #11091f;
-  }
+.theme-win98 .win98-icon-label {
+  @apply text-white text-[11px] px-1 text-center leading-tight mt-1;
+  text-shadow: 1px 1px #000;
+  font-family: 'MS Sans Serif', 'Tahoma', Arial, sans-serif;
 }
 
-/* 
-  Vaporwave Background Animations 
-*/
-.synthwave-bg {
-  background: linear-gradient(180deg, #090014 0%, #1e003b 50%, #36005c 100%);
-  position: relative;
-  overflow: hidden;
+.theme-win98 .win98-icon-label-selected {
+  @apply bg-[#000080] border border-dotted border-white;
 }
 
-.synthwave-sun {
-  position: absolute;
-  top: 30%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40vw;
-  height: 40vw;
-  max-width: 400px;
-  max-height: 400px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #ffdc00 0%, #ff00ff 100%);
-  box-shadow: 0 0 100px #ff00ff;
-  z-index: 0;
+/* Scrollbar handling */
+.theme-win98 ::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background: #dfdfdf;
 }
 
-/* Sun scanlines */
-.synthwave-sun::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: repeating-linear-gradient(
-    180deg,
-    transparent 0%,
-    transparent 45%,
-    #090014 45%,
-    #090014 50%
-  );
-  background-size: 100% 20px;
+.theme-win98 ::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
+  border: 1px solid #c0c0c0;
 }
 
-.synthwave-grid {
-  position: absolute;
-  bottom: 0;
-  left: -50%;
-  width: 200%;
-  height: 50%;
-  background-image:
-    linear-gradient(to right, rgba(0, 255, 255, 0.4) 2px, transparent 2px),
-    linear-gradient(to top, rgba(255, 0, 255, 0.6) 2px, transparent 2px);
-  background-size: 60px 60px;
-  transform: perspective(600px) rotateX(60deg);
-  transform-origin: top;
-  animation: grid-move 5s linear infinite;
-  z-index: 1;
+/* Win98 Context Menu Styles */
+.theme-win98 .win98-menu {
+  @apply bg-[#c0c0c0] absolute z-[99999] select-none;
+  box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.5);
+  /* Hard shadow */
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #808080;
+  border-bottom: 1px solid #808080;
+  padding: 2px;
 }
 
-@keyframes grid-move {
-  0% { transform: perspective(600px) rotateX(60deg) translateY(0); }
-  100% { transform: perspective(600px) rotateX(60deg) translateY(60px); }
+.theme-win98 .win98-menu-inner {
+  @apply border-t border-l border-[#dfdfdf] border-r border-b border-[#000000];
 }
 
-/* CRT Scanline Overlay */
-.crt-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.15),
-    rgba(0, 0, 0, 0.15) 1px,
-    transparent 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  z-index: 9999;
+.theme-win98 .win98-menu-item {
+  @apply px-4 py-1 text-[11px] cursor-default flex items-center justify-between whitespace-nowrap;
+  font-family: 'MS Sans Serif', 'Tahoma', Arial, sans-serif;
+  color: #000000;
 }
 
-/* Screen Flicker / Glow */
-.crt-flicker {
-  animation: crt-flicker 0.15s infinite;
+.theme-win98 .win98-menu-item.disabled {
+  @apply text-[#808080];
+  text-shadow: 1px 1px #ffffff;
 }
 
-@keyframes crt-flicker {
-  0% { opacity: 0.95; }
-  50% { opacity: 1; }
-  100% { opacity: 0.98; }
+.theme-win98 .win98-menu-item:not(.disabled):hover {
+  @apply bg-[#000080] text-white;
 }
 
-/* Retro Window Styles */
-.retro-window {
-  @apply bg-black/60 backdrop-blur-md border-2 border-primary box-shadow-neon-pink flex flex-col overflow-hidden;
+.theme-win98 .win98-menu-separator {
+  @apply h-[2px] mx-[2px] my-[3px] border-t border-[#808080] border-b border-[#ffffff];
 }
 
-.retro-titlebar {
-  @apply h-8 bg-gradient-to-r from-primary/80 to-secondary/80 flex items-center justify-between px-2 cursor-move border-b-2 border-primary;
+.theme-win98 .win98-submenu-arrow {
+  @apply ml-4 text-[7px];
 }
 
-/* Input focus override */
-input:focus, textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px hsl(var(--secondary));
+/* Selection Rectangle */
+.theme-win98 .win98-selection-rect {
+  @apply absolute border border-white border-dotted bg-transparent pointer-events-none z-[15];
+  mix-blend-mode: difference;
 }

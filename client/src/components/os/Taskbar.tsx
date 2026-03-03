@@ -17,22 +17,26 @@ export default function Taskbar() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 h-12 bg-[#1a0b2e] border-t-2 border-primary z-[9999] flex items-center px-1 justify-between shadow-[0_-5px_20px_rgba(255,51,255,0.3)]">
-        
-        <div className="flex items-center gap-2 h-full py-1">
+      <div
+        className="fixed bottom-0 left-0 right-0 h-[28px] z-[9999] flex items-center px-[2px] justify-between bg-[#c0c0c0] border-t border-white"
+      >
+
+        <div className="flex items-center gap-1 h-full py-[1px]">
           {/* Start Button */}
           <button
             onClick={() => setStartOpen(!startOpen)}
-            className={`h-full px-4 font-display text-lg tracking-widest border-2 flex items-center gap-2 transition-all
-              ${startOpen 
-                ? 'bg-primary border-white text-white box-shadow-neon-pink' 
-                : 'bg-transparent border-primary text-primary hover:bg-primary/20'}`}
+            className={`h-[22px] px-1.5 flex items-center gap-1 transition-none
+              ${startOpen ? 'win98-inset' : 'win98-button'}`}
           >
-            <span className="text-xl">🚀</span> START
+            <img src="https://api.iconify.design/logos/microsoft-windows.svg?width=16" alt="" className="w-4 h-4" style={{ imageRendering: 'pixelated' }} />
+            <span className="font-bold text-xs">Start</span>
           </button>
 
+          {/* Vertical Separator */}
+          <div className="w-[2px] h-[20px] bg-gray-500 border-r border-white mx-1" />
+
           {/* Open Apps */}
-          <div className="flex items-center gap-1 overflow-x-auto px-2">
+          <div className="flex items-center gap-[4px] h-full overflow-x-hidden ml-1">
             {openWindows.map(w => {
               const app = APPS[w.id];
               const isActive = activeWindowId === w.id && !w.isMinimized;
@@ -43,13 +47,11 @@ export default function Taskbar() {
                     if (w.isMinimized) restoreWindow(w.id);
                     else focusWindow(w.id);
                   }}
-                  className={`h-9 px-3 border-2 flex items-center gap-2 max-w-[150px] truncate transition-all
-                    ${isActive 
-                      ? 'bg-secondary border-white text-[#1a0b2e] box-shadow-neon-cyan font-bold' 
-                      : 'bg-[#090014] border-secondary/50 text-secondary hover:bg-secondary/20'}`}
+                  className={`h-[22px] px-2 flex items-center gap-1 max-w-[160px] truncate transition-none
+                    ${isActive ? 'win98-inset font-bold bg-[#dfdfdf]' : 'win98-button'}`}
                 >
                   <img src={app.iconUrl} alt="" className="w-4 h-4" />
-                  <span className="truncate text-sm font-display">{app.title}</span>
+                  <span className="truncate text-xs">{app.title}</span>
                 </button>
               );
             })}
@@ -57,14 +59,14 @@ export default function Taskbar() {
         </div>
 
         {/* System Tray */}
-        <div className="flex items-center gap-4 h-full px-4 border-l-2 border-primary/30">
-          <button 
+        <div className="flex items-center gap-2 h-[22px] px-2 mr-1 win98-inset bg-[#c0c0c0]">
+          <button
             onClick={toggleSound}
-            className="text-secondary hover:text-white transition-colors"
+            className="hover:opacity-70 transition-none scale-75"
           >
-            {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
-          <div className="text-primary font-display text-xl tracking-widest text-shadow-neon-pink">
+          <div className="text-xs whitespace-nowrap font-bold text-black">
             {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>

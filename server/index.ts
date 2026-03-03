@@ -1,10 +1,16 @@
-import express, { type Request, Response, NextFunction } from "express";
+import "dotenv/config";
+import "./db";
+import * as express from "express";
+import { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
-const app = express();
+import mongoose from "mongoose";
+
+const app = (express as any).default ? (express as any).default() : (express as any)();
 const httpServer = createServer(app);
+
 
 declare module "http" {
   interface IncomingMessage {
@@ -14,7 +20,7 @@ declare module "http" {
 
 app.use(
   express.json({
-    verify: (req, _res, buf) => {
+    verify: (req: any, _res: any, buf: Buffer) => {
       req.rawBody = buf;
     },
   }),
@@ -33,16 +39,16 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
+  res.json = function (bodyJson: any, ...args: any[]) {
     capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+    return (originalResJson as any).apply(res, [bodyJson, ...args]);
+  } as any;
 
   res.on("finish", () => {
     const duration = Date.now() - start;
@@ -60,6 +66,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Wait for MongoDB to connect before starting
+  if (mongoose.connection.readyState !== 1) {
+    log("Waiting for MongoDB connection...");
+    await new Promise((resolve) => {
+      mongoose.connection.once("connected", resolve);
+      mongoose.connection.once("error", resolve);
+    });
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -94,7 +109,6 @@ app.use((req, res, next) => {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
     },
     () => {
       log(`serving on port ${port}`);

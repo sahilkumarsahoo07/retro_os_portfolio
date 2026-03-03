@@ -7,7 +7,7 @@ import { Send, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function ContactApp() {
   const { mutate, isPending, isSuccess, error, reset } = useCreateMessage();
-  
+
   const form = useForm<MessageInput>({
     resolver: zodResolver(api.messages.create.input),
     defaultValues: {
@@ -26,80 +26,88 @@ export default function ContactApp() {
   };
 
   return (
-    <div className="p-6 h-full overflow-y-auto bg-[#090014] text-white">
-      <h1 className="text-3xl font-display text-primary text-shadow-neon-pink mb-6 border-b-2 border-primary pb-4">
-        TRANSMIT_MESSAGE
-      </h1>
+    <div className="p-4 h-full overflow-y-auto bg-[#c0c0c0] text-black selection:bg-[#000080] selection:text-white">
+      <div className="flex items-center gap-2 mb-4 border-b border-[#808080] pb-2">
+        <h1 className="text-xl font-bold">New Message</h1>
+        <div className="ml-auto flex gap-1">
+          <div className="w-4 h-4 bg-[#008000] rounded-full border border-black shadow-inner" />
+          <span className="text-[10px] font-bold">SECURE CHANNEL</span>
+        </div>
+      </div>
 
       {isSuccess ? (
-        <div className="flex flex-col items-center justify-center h-64 text-secondary space-y-4 text-center">
-          <CheckCircle className="w-16 h-16 mb-2 text-shadow-neon-cyan" />
-          <h2 className="font-display text-2xl">TRANSMISSION SUCCESSFUL</h2>
-          <p className="font-body text-xl text-white/80">
-            Message received in the mainframe. Expect a response soon.
-          </p>
-          <button 
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 bg-white win98-inset m-2">
+          <CheckCircle className="w-16 h-16 text-[#008000]" />
+          <div>
+            <h2 className="text-lg font-bold">Mail Sent Successfully</h2>
+            <p className="text-sm text-gray-600">
+              The message has been dispatched to the recipient's inbox.
+            </p>
+          </div>
+          <button
             onClick={() => reset()}
-            className="mt-6 font-display bg-primary text-white px-6 py-2 hover:bg-secondary transition-colors box-shadow-neon-pink"
+            className="win98-button font-bold mt-4"
           >
-            SEND ANOTHER
+            Compose New
           </button>
         </div>
       ) : (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-2">
           {error && (
-            <div className="bg-destructive/20 border border-destructive p-3 flex items-center gap-3 text-destructive-foreground font-body text-lg">
-              <AlertTriangle className="text-destructive" />
-              <span>{error.message}</span>
+            <div className="bg-white border-2 border-red-600 p-2 flex items-center gap-3 text-red-700 font-bold text-xs mb-4">
+              <AlertTriangle className="text-red-600" size={16} />
+              <span>System Error: {error.message}</span>
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="font-display text-secondary tracking-widest block">IDENTIFIER (NAME)</label>
-            <input 
+          <div className="grid grid-cols-1 gap-1">
+            <label className="text-xs font-bold">From (Name):</label>
+            <input
               {...form.register('name')}
-              className="w-full bg-black/50 border-2 border-primary/50 focus:border-secondary p-3 font-body text-xl text-white transition-colors"
-              placeholder="Enter alias..."
+              className="win98-inset w-full p-1 text-sm outline-none focus:ring-1 focus:ring-[#000080]"
+              placeholder="Your name"
             />
             {form.formState.errors.name && (
-              <p className="font-body text-destructive text-lg">{form.formState.errors.name.message}</p>
+              <p className="text-[10px] text-red-700 font-bold">{form.formState.errors.name.message}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <label className="font-display text-secondary tracking-widest block">ROUTING (EMAIL)</label>
-            <input 
+          <div className="grid grid-cols-1 gap-1">
+            <label className="text-xs font-bold">Reply-To (Email):</label>
+            <input
               {...form.register('email')}
               type="email"
-              className="w-full bg-black/50 border-2 border-primary/50 focus:border-secondary p-3 font-body text-xl text-white transition-colors"
-              placeholder="Enter frequency..."
+              className="win98-inset w-full p-1 text-sm outline-none focus:ring-1 focus:ring-[#000080]"
+              placeholder="example@mail.com"
             />
             {form.formState.errors.email && (
-              <p className="font-body text-destructive text-lg">{form.formState.errors.email.message}</p>
+              <p className="text-[10px] text-red-700 font-bold">{form.formState.errors.email.message}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <label className="font-display text-secondary tracking-widest block">PAYLOAD (MESSAGE)</label>
-            <textarea 
+          <div className="grid grid-cols-1 gap-1">
+            <label className="text-xs font-bold">Message Body:</label>
+            <textarea
               {...form.register('content')}
-              rows={5}
-              className="w-full bg-black/50 border-2 border-primary/50 focus:border-secondary p-3 font-body text-xl text-white transition-colors resize-none"
-              placeholder="Enter data..."
+              rows={8}
+              className="win98-inset w-full p-1 text-sm outline-none focus:ring-1 focus:ring-[#000080] resize-none"
+              placeholder="Typing message..."
             />
             {form.formState.errors.content && (
-              <p className="font-body text-destructive text-lg">{form.formState.errors.content.message}</p>
+              <p className="text-[10px] text-red-700 font-bold">{form.formState.errors.content.message}</p>
             )}
           </div>
 
-          <button 
-            type="submit"
-            disabled={isPending}
-            className="w-full flex items-center justify-center gap-3 font-display bg-gradient-to-r from-primary to-secondary text-white p-4 text-xl hover:opacity-90 disabled:opacity-50 transition-opacity box-shadow-neon-pink"
-          >
-            {isPending ? 'ENCRYPTING...' : 'INITIALIZE UPLOAD'} 
-            <Send size={20} />
-          </button>
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="win98-button flex items-center gap-2 px-6 py-1 font-bold disabled:opacity-50"
+            >
+              {isPending ? 'Sending...' : 'Send Message'}
+              <Send size={14} />
+            </button>
+          </div>
         </form>
       )}
     </div>

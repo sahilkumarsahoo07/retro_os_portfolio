@@ -3,13 +3,13 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { db } from "./db";
-import { projects, gallery } from "@shared/schema";
+import { ProjectModel, GalleryModel, ProfileModel, SkillModel, ExperienceModel } from "./models";
+
 
 async function seedDatabase() {
   const existingProjects = await storage.getProjects();
   if (existingProjects.length === 0) {
-    await db.insert(projects).values([
+    await ProjectModel.insertMany([
       {
         title: "Retro OS Portfolio",
         description: "A Windows 95 inspired personal website built with React and Tailwind CSS.",
@@ -36,7 +36,7 @@ async function seedDatabase() {
 
   const existingGallery = await storage.getGalleryImages();
   if (existingGallery.length === 0) {
-    await db.insert(gallery).values([
+    await GalleryModel.insertMany([
       { title: "Vaporwave sunset", url: "https://images.unsplash.com/photo-1614850715649-1d0106293bd1?q=80&w=2070", order: 1 },
       { title: "Retro arcade", url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070", order: 2 },
       { title: "Cyberpunk city", url: "https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070", order: 3 },
@@ -76,6 +76,24 @@ export async function registerRoutes(
       }
       throw err;
     }
+  });
+
+  // ── Profile ──────────────────────────────────────────────────────────────────
+  app.get(api.profile.get.path, async (_req, res) => {
+    const profile = await ProfileModel.findOne().lean();
+    res.status(200).json(profile ?? null);
+  });
+
+  // ── Skills ───────────────────────────────────────────────────────────────────
+  app.get(api.skills.list.path, async (_req, res) => {
+    const skills = await SkillModel.find().lean();
+    res.status(200).json(skills);
+  });
+
+  // ── Experience ───────────────────────────────────────────────────────────────
+  app.get(api.experience.list.path, async (_req, res) => {
+    const experience = await ExperienceModel.find().lean();
+    res.status(200).json(experience);
   });
 
   return httpServer;
