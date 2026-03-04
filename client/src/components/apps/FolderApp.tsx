@@ -54,7 +54,7 @@ export default function FolderApp({ title, items, path, iconUrl }: FolderAppProp
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#c0c0c0] win98-window" onClick={() => setSelectedId(null)}>
+        <div className="flex flex-col h-full bg-[#c0c0c0]" onClick={() => setSelectedId(null)}>
 
             {/* 1. Menu Bar */}
             <div className="flex items-center gap-3 px-1 py-[1px] border-b border-[#dfdfdf] shadow-[0_1px_0_#808080]">

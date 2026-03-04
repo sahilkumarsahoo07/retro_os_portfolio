@@ -32,12 +32,13 @@ export default function StartMenu({ onClose }: { onClose: () => void }) {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 20, opacity: 0 }}
         transition={{ duration: 0.1 }}
-        className="fixed bottom-[28px] left-0 z-[10000] flex overflow-hidden w-64 bg-[#c0c0c0] win98-window"
+        className="fixed bottom-[28px] left-0 z-[10000] flex bg-[#c0c0c0] win98-outset p-[2px] shadow-[2px_2px_4px_rgba(0,0,0,0.3)]"
+
       >
         {/* Vertical Banner */}
-        <div className="w-8 bg-gradient-to-t from-[#000080] to-[#1084d0] flex items-end justify-center py-2">
+        <div className="w-[28px] bg-gradient-to-t from-[#000080] to-[#1084d0] flex items-end justify-center py-2 shrink-0">
           <span
-            className="text-white font-bold text-xl select-none"
+            className="text-white font-bold text-[18px] leading-none tracking-widest pointer-events-none select-none"
             style={{
               writingMode: 'vertical-rl',
               transform: 'rotate(180deg)',
@@ -49,31 +50,36 @@ export default function StartMenu({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Menu Items */}
-        <div className="flex-1 flex flex-col py-1">
-          <div className="flex flex-col border-b border-[#808080] mb-1">
-            {(Object.keys(APPS) as AppID[]).map((id) => {
-              const app = APPS[id];
-              return (
-                <button
-                  key={id}
-                  onClick={() => handleAppClick(id)}
-                  className="flex items-center gap-3 px-3 py-1.5 hover:bg-[#000080] hover:text-white group transition-none text-left"
-                >
-                  <img src={app.iconUrl} alt="" className="w-8 h-8 pointer-events-none" style={{ imageRendering: 'pixelated' }} />
-                  <span className="text-sm font-bold">{app.title}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex flex-col py-[2px] pl-[1px] min-w-[180px]">
+          {(['my-computer', 'about', 'contact', 'terminal'] as AppID[]).map((id) => {
+            const app = APPS[id];
+            if (!app) return null; // Safety check in case an ID is invalid
+
+            return (
+              <button
+                key={id}
+                onClick={() => handleAppClick(id)}
+                className="flex items-center gap-3 px-3 py-[6px] hover:bg-[#000080] hover:text-white text-black w-full text-left outline-none pr-8 cursor-pointer"
+              >
+                <img src={app.iconUrl} alt="" className="w-8 h-8 pointer-events-none" style={{ imageRendering: 'pixelated' }} />
+                <span className="text-sm font-bold truncate leading-none mt-1">{app.title}</span>
+              </button>
+            );
+          })}
+
+          <div className="flex-1" />
+
+          {/* Separator - Thin line with highlight and shadow */}
+          <div className="h-[2px] border-t border-[#808080] border-b border-white mx-1 my-[2px]" />
 
           <button
-            className="flex items-center gap-3 px-3 py-2 hover:bg-[#000080] hover:text-white group transition-none text-left"
+            className="flex items-center gap-3 px-3 py-[6px] hover:bg-[#000080] hover:text-white text-black w-full text-left outline-none pr-8 cursor-pointer"
             onClick={() => window.location.reload()}
           >
-            <div className="w-8 h-8 flex items-center justify-center">
-              <Power size={20} />
+            <div className="w-8 h-8 flex items-center justify-center shrink-0">
+              <Power size={24} className="stroke-current" />
             </div>
-            <span className="text-sm font-bold">Shut Down...</span>
+            <span className="text-sm font-bold truncate leading-none mt-1">Shut Down...</span>
           </button>
         </div>
       </motion.div>

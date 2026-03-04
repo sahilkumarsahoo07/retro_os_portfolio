@@ -52,29 +52,23 @@ export async function registerRoutes(
   // Seed initial data
   seedDatabase().catch(console.error);
 
-  app.get(api.projects.list.path, async (req, res) => {
-    const allProjects = await storage.getProjects();
-    res.status(200).json(allProjects);
+  app.get("/api/projects", async (_req, res) => {
+    const projects = await storage.getProjects();
+    res.json(projects);
   });
 
-  app.get(api.gallery.list.path, async (req, res) => {
-    const allGalleryImages = await storage.getGalleryImages();
-    res.status(200).json(allGalleryImages);
+  app.get("/api/gallery", async (_req, res) => {
+    const images = await storage.getGalleryImages();
+    res.json(images);
   });
 
-  app.post(api.messages.create.path, async (req, res) => {
+  app.post("/api/messages", async (req, res) => {
     try {
-      const input = api.messages.create.input.parse(req.body);
-      const message = await storage.createMessage(input);
-      res.status(201).json(message);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: err.errors[0].message,
-          field: err.errors[0].path.join('.'),
-        });
-      }
-      throw err;
+      const data = insertMessageSchema.parse(req.body);
+      const message = await storage.createMessage(data);
+      res.json(message);
+    } catch (e) {
+      res.status(400).json({ error: "Invalid message data" });
     }
   });
 

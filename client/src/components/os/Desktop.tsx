@@ -1,15 +1,16 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { useOS, type DesktopItem } from './OSProvider';
+import React, { useState, useRef, useCallback, startTransition } from 'react';
+import { useOS, type DesktopItem, type AppID } from './OSProvider';
 import Window from './Window';
 import { AnimatePresence } from 'framer-motion';
 import ContextMenu from './ContextMenu';
+import Win98Dialog from './Win98Dialog';
+import DeleteConfirmDialog from '../apps/DeleteConfirmDialog';
 
-// Grid cell dimensions - matches Win98 icon size
+// Grid cell dimensions
 const CELL_W = 90;
-const CELL_H = 90;
-const GRID_PADDING = 8;
+const CELL_H = 98;   // extra height to ensure 2-line labels never overlap
+const GRID_PADDING = 16; // breathing room at screen edges
 
-/** Convert pixel coords → nearest grid cell {col, row} */
 function pixelToCell(x: number, y: number): { col: number; row: number } {
   return {
     col: Math.round((x - GRID_PADDING) / CELL_W),
@@ -17,7 +18,6 @@ function pixelToCell(x: number, y: number): { col: number; row: number } {
   };
 }
 
-/** Convert grid cell → top-left pixel coords */
 function cellToPixel(col: number, row: number): { x: number; y: number } {
   return {
     x: GRID_PADDING + col * CELL_W,
@@ -25,7 +25,6 @@ function cellToPixel(col: number, row: number): { x: number; y: number } {
   };
 }
 
-/** Find the nearest free cell, spiraling outward from the target */
 function findFreeCell(
   targetCol: number,
   targetRow: number,
@@ -55,6 +54,13 @@ export default function Desktop() {
     openWindow,
     desktopItems,
     updateDesktopItem,
+    recycleRef,
+    recycleBinHovered,
+    setRecycleBinHovered,
+    dropOnRecycleBin,
+    recycleBinItems,
+    systemDialog,
+    closeSystemDialog,
   } = useOS();
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -76,14 +82,9 @@ export default function Desktop() {
   // ── Lasso selection ──────────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || e.target !== desktopRef.current) return;
-
-    // Save any active renames
     desktopItems.forEach(item => {
-      if (item.isRenaming) {
-        updateDesktopItem(item.id, { isRenaming: false });
-      }
+      if (item.isRenaming) updateDesktopItem(item.id, { isRenaming: false });
     });
-
     setSelectedItems([]);
     isSelecting.current = true;
     const rect = desktopRef.current!.getBoundingClientRect();
@@ -118,7 +119,7 @@ export default function Desktop() {
     setSelection(null);
   };
 
-  // ── Grid-snapped drag with displacement ─────────────────────────────────
+  // ── Grid-snapped drag with recycle bin hit-test ───────────────────────────
   const handleIconDragStart = useCallback((
     e: React.PointerEvent,
     draggedItem: DesktopItem,
@@ -133,7 +134,13 @@ export default function Desktop() {
     const initialX = draggedItem.x;
     const initialY = draggedItem.y;
 
-    // Ghost follow cursor directly (no snap during drag for responsiveness)
+    const isOverRecycleBin = (clientX: number, clientY: number) => {
+      if (!recycleRef?.current) return false;
+      const rect = recycleRef.current.getBoundingClientRect();
+      return clientX >= rect.left && clientX <= rect.right &&
+        clientY >= rect.top && clientY <= rect.bottom;
+    };
+
     const onPointerMove = (ev: PointerEvent) => {
       const desktopRect = desktopRef.current?.getBoundingClientRect();
       if (!desktopRect) return;
@@ -141,15 +148,34 @@ export default function Desktop() {
       const newY = Math.max(0, Math.min(initialY + ev.clientY - startMouseY, desktopRect.height - CELL_H));
       iconEl.style.left = `${newX}px`;
       iconEl.style.top = `${newY}px`;
+
+      // Highlight recycle bin when hovering over it (skip if this IS the recycle bin)
+      if (draggedItem.appId !== 'recycle-bin') {
+        setRecycleBinHovered(isOverRecycleBin(ev.clientX, ev.clientY));
+      }
     };
 
     const onPointerUp = (ev: PointerEvent) => {
-      const desktopRect = desktopRef.current?.getBoundingClientRect();
-      if (!desktopRect) {
-        document.removeEventListener('pointermove', onPointerMove);
-        document.removeEventListener('pointerup', onPointerUp);
+      setRecycleBinHovered(false);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+
+      // ── Drop on recycle bin ──────────────────────────────────────────────
+      if (draggedItem.appId !== 'recycle-bin' && isOverRecycleBin(ev.clientX, ev.clientY)) {
+        // Reset DOM styles immediately. If item is deleted it unmounts,
+        // if it stays (protected), it smoothly animates back to original location.
+        iconEl.style.left = `${initialX}px`;
+        iconEl.style.top = `${initialY}px`;
+        iconEl.style.transition = 'left 0.15s ease, top 0.15s ease';
+
+        dropOnRecycleBin(draggedItem.id);
+        try { iconEl.releasePointerCapture(ev.pointerId); } catch { }
         return;
       }
+
+      // ── Drop on desktop — snap to grid ───────────────────────────────────
+      const desktopRect = desktopRef.current?.getBoundingClientRect();
+      if (!desktopRect) return;
 
       const dropX = parseInt(iconEl.style.left, 10);
       const dropY = parseInt(iconEl.style.top, 10);
@@ -157,14 +183,12 @@ export default function Desktop() {
       const maxCols = Math.floor((desktopRect.width - GRID_PADDING) / CELL_W);
       const maxRows = Math.floor((desktopRect.height - GRID_PADDING) / CELL_H);
 
-      // Snap drop position to nearest grid cell
       const { col: targetCol, row: targetRow } = pixelToCell(dropX, dropY);
       const clampedCol = Math.max(0, Math.min(targetCol, maxCols - 1));
       const clampedRow = Math.max(0, Math.min(targetRow, maxRows - 1));
 
-      // Build occupied cell map (excluding the dragged item itself)
       const occupiedCells = new Set<string>();
-      const itemAtTarget: DesktopItem | undefined = desktopItems.find(item => {
+      const itemAtTarget = desktopItems.find(item => {
         if (item.id === draggedItem.id) return false;
         const { col, row } = pixelToCell(item.x, item.y);
         return col === clampedCol && row === clampedRow;
@@ -172,35 +196,30 @@ export default function Desktop() {
 
       desktopItems.forEach(item => {
         if (item.id === draggedItem.id) return;
-        if (itemAtTarget && item.id === itemAtTarget.id) return; // will be displaced
+        if (itemAtTarget && item.id === itemAtTarget.id) return;
         const { col, row } = pixelToCell(item.x, item.y);
         occupiedCells.add(`${col},${row}`);
       });
 
-      // Place dragged item at the snapped target cell
       const snappedPos = cellToPixel(clampedCol, clampedRow);
       iconEl.style.left = `${snappedPos.x}px`;
       iconEl.style.top = `${snappedPos.y}px`;
       updateDesktopItem(draggedItem.id, { x: snappedPos.x, y: snappedPos.y });
 
-      // If another icon was at that cell, find it the nearest free spot
       if (itemAtTarget) {
-        occupiedCells.add(`${clampedCol},${clampedRow}`); // now taken by dragged item
-        const { col: freeCol, row: freeRow } = findFreeCell(
-          clampedCol, clampedRow, occupiedCells, maxCols, maxRows
-        );
+        occupiedCells.add(`${clampedCol},${clampedRow}`);
+        const { col: freeCol, row: freeRow } = findFreeCell(clampedCol, clampedRow, occupiedCells, maxCols, maxRows);
         const freePos = cellToPixel(freeCol, freeRow);
         updateDesktopItem(itemAtTarget.id, { x: freePos.x, y: freePos.y });
       }
 
+      iconEl.style.transition = 'left 0.15s ease, top 0.15s ease';
       try { iconEl.releasePointerCapture(ev.pointerId); } catch { }
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
     };
 
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
-  }, [desktopRef, desktopItems, updateDesktopItem]);
+  }, [desktopRef, desktopItems, updateDesktopItem, recycleRef, setRecycleBinHovered, dropOnRecycleBin]);
 
   return (
     <div
@@ -229,28 +248,33 @@ export default function Desktop() {
         />
       )}
 
-      {/* Desktop Icons */}
+      {/* ── Desktop Icons — z-10, pointer-events inside ─────────────────── */}
       <div className="absolute inset-0 select-none z-10 pointer-events-none">
         {desktopItems.map((item) => {
           const isSelected = selectedItems.includes(item.id);
           const isRenaming = item.isRenaming;
+          const isRecycleBin = item.appId === 'recycle-bin';
 
           return (
             <div
               key={item.id}
+              // Attach shared recycleRef to the recycle bin icon
+              ref={isRecycleBin ? (node) => {
+                (recycleRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+              } : undefined}
               style={{
                 position: 'absolute',
                 left: item.x,
                 top: item.y,
                 width: CELL_W - 10,
                 touchAction: 'none',
-                // Smooth slide when displaced by another icon
                 transition: isRenaming ? 'none' : 'left 0.15s ease, top 0.15s ease',
               }}
-              className="flex flex-col items-center cursor-default pointer-events-auto"
+              className={`flex flex-col items-center cursor-default pointer-events-auto
+                ${isRecycleBin && recycleBinHovered ? 'drop-shadow-[0_0_6px_rgba(255,255,0,0.9)]' : ''}
+              `}
               onPointerDown={(e) => {
                 if (e.button !== 0 || isRenaming) return;
-                // Disable transition during active drag so it tracks cursor precisely
                 (e.currentTarget as HTMLElement).style.transition = 'none';
                 handleIconDragStart(e, item, e.currentTarget as HTMLElement);
               }}
@@ -262,11 +286,9 @@ export default function Desktop() {
               }}
               onClick={(e) => {
                 e.stopPropagation();
-
                 const now = Date.now();
                 const lastClick = lastClickTime.current[item.id] || 0;
                 const delta = now - lastClick;
-
                 if (isSelected && delta > 500 && delta < 2000 && !isRenaming) {
                   updateDesktopItem(item.id, { isRenaming: true });
                 } else {
@@ -276,22 +298,59 @@ export default function Desktop() {
                       : [item.id]
                   );
                 }
-
                 lastClickTime.current[item.id] = now;
                 setContextMenu(null);
               }}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 if (isRenaming) return;
-                if (item.appId) openWindow(item.appId);
+
+                // If it has a specific appId, open that
+                if (item.appId) {
+                  startTransition(() => {
+                    openWindow(item.appId as AppID);
+                  });
+                  return;
+                }
+
+                // If it's a .txt file, open in Notepad
+                if (item.name.toLowerCase().endsWith('.txt')) {
+                  startTransition(() => {
+                    openWindow('notepad', { item }, item.id);
+                  });
+                  return;
+                }
+
+                // If it's a folder, open in Explorer
+                if (item.type === 'folder') {
+                  startTransition(() => {
+                    openWindow('folder-explorer', { item }, item.id);
+                  });
+                  return;
+                }
               }}
             >
-              <div className={`w-12 h-12 flex items-center justify-center mb-1 ${isSelected ? 'opacity-70' : ''}`}>
+              <div className={`w-12 h-12 flex items-center justify-center mb-1 transition-transform duration-100
+                ${isRecycleBin && recycleBinHovered ? 'scale-110' : ''}
+                ${isSelected ? 'opacity-70' : ''}
+              `}>
                 <img
-                  src={item.iconUrl}
+                  src={
+                    isRecycleBin
+                      ? (recycleBinItems.length > 0
+                        ? 'https://win98icons.alexmeub.com/icons/png/recycle_bin_full-4.png'
+                        : 'https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-4.png')
+                      : (item.name.toLowerCase().endsWith('.txt')
+                        ? 'https://win98icons.alexmeub.com/icons/png/notepad_file-0.png'
+                        : (item.type === 'folder'
+                          ? 'https://win98icons.alexmeub.com/icons/png/directory_closed-4.png'
+                          : item.iconUrl))
+                  }
                   alt={item.name}
                   draggable={false}
-                  className={`w-10 h-10 pointer-events-none pixelated ${isSelected ? 'brightness-50 sepia-100 hue-rotate-[200deg] saturate-200' : ''}`}
+                  className={`w-10 h-10 pointer-events-none pixelated
+                    ${isSelected ? 'brightness-50 sepia-100 hue-rotate-[200deg] saturate-200' : ''}
+                  `}
                 />
               </div>
 
@@ -306,15 +365,10 @@ export default function Desktop() {
                     e.target.setSelectionRange(0, dotIndex > 0 ? dotIndex : val.length);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleRename(item.id, e.currentTarget.value);
-                    } else if (e.key === 'Escape') {
-                      updateDesktopItem(item.id, { isRenaming: false });
-                    }
+                    if (e.key === 'Enter') handleRename(item.id, e.currentTarget.value);
+                    else if (e.key === 'Escape') updateDesktopItem(item.id, { isRenaming: false });
                   }}
-                  onBlur={(e) => {
-                    handleRename(item.id, e.target.value);
-                  }}
+                  onBlur={(e) => handleRename(item.id, e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                 />
               ) : (
@@ -327,14 +381,15 @@ export default function Desktop() {
         })}
       </div>
 
-      {/* Windows Layer */}
-      <div className="absolute inset-0 z-20 pointer-events-none">
-        <AnimatePresence>
-          {windows.filter(w => w.isOpen && !w.isMinimized).map(w => (
-            <Window key={w.id} windowState={w} />
-          ))}
-        </AnimatePresence>
-      </div>
+      {/* ── Windows — rendered DIRECTLY in desktopRef, no wrapper div ──────
+           This is the key fix: Window uses desktopRef.getBoundingClientRect()
+           for position math. If windows live in a child div instead of directly
+           inside desktopRef, even a 1px border/padding difference causes offset. */}
+      <AnimatePresence>
+        {windows.filter(w => w.isOpen && !w.isMinimized).map(w => (
+          <Window key={w.id} windowState={w} />
+        ))}
+      </AnimatePresence>
 
       {/* Context Menu */}
       {contextMenu && (
@@ -345,6 +400,19 @@ export default function Desktop() {
           onClose={() => setContextMenu(null)}
         />
       )}
+
+      {/* System Error Dialog */}
+      {systemDialog && (
+        <Win98Dialog
+          title={systemDialog.title}
+          message={systemDialog.message}
+          iconType={systemDialog.iconType}
+          onClose={closeSystemDialog}
+        />
+      )}
+
+      {/* Custom Delete Confirmation Dialog */}
+      <DeleteConfirmDialog />
     </div>
   );
 }

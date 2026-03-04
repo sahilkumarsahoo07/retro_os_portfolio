@@ -5,9 +5,10 @@ import mongoose from "mongoose";
 export const insertProjectSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
-  imageUrl: z.string().optional(),
-  tech: z.string().optional(),
-  link: z.string().optional(),
+  technologies: z.array(z.string()),
+  githubLink: z.string().optional(),
+  liveDemo: z.string().optional(),
+  image: z.string().optional(),
   order: z.number().optional(),
 });
 
@@ -25,34 +26,50 @@ export const insertMessageSchema = z.object({
 
 export const profileSchema = z.object({
   name: z.string(),
-  role: z.string(),
-  experience: z.string(),
-  bio: z.string(),
-  location: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  email: z.string(),
+  phone: z.string(),
+  linkedin: z.string(),
+  github: z.string(),
 });
 
 export const skillSchema = z.object({
-  name: z.string(),
-  level: z.number(),
+  category: z.string(),
+  skills: z.array(z.string()),
 });
 
 export const experienceSchema = z.object({
-  title: z.string(),
   company: z.string(),
+  role: z.string(),
   duration: z.string(),
   description: z.string(),
 });
 
+export const certificationSchema = z.object({
+  name: z.string(),
+  issuer: z.string(),
+  year: z.string(),
+});
+
+export const achievementSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  date: z.string(),
+});
+
 // Types
 export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type Project = InsertProject & { id: string };
+export type Project = InsertProject & { _id: string };
 
 export type InsertGalleryImage = z.infer<typeof insertGallerySchema>;
-export type GalleryImage = InsertGalleryImage & { id: string };
+export type GalleryImage = InsertGalleryImage & { _id: string };
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
-export type Message = InsertMessage & { id: string; createdAt: Date };
+export type Message = InsertMessage & { _id: string; createdAt: Date };
 
-export type Profile = z.infer<typeof profileSchema> & { id: string };
-export type Skill = z.infer<typeof skillSchema> & { id: string };
-export type Experience = z.infer<typeof experienceSchema> & { id: string };
+export type Profile = z.infer<typeof profileSchema> & { _id: string };
+export type Skill = z.infer<typeof skillSchema> & { _id: string };
+export type Experience = z.infer<typeof experienceSchema> & { _id: string };
+export type Certification = z.infer<typeof certificationSchema> & { _id: string };
+export type Achievement = z.infer<typeof achievementSchema> & { _id: string };

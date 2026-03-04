@@ -1,15 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+const BOOT_TEXT = [
+  "Microsoft(R) Windows 98",
+  // "(C) Copyright Microsoft Corp 1981-1998.",
+  "Sahil's Portfolio v1.0.4",
+  "Type 'help' for a list of available commands.",
+  ""
+];
+
 export default function TerminalApp() {
-  const [history, setHistory] = useState([
-    "SYNTH_TERM v1.0.4",
-    "Type 'help' for a list of available commands."
-  ]);
+  const [history, setHistory] = useState<string[]>([...BOOT_TEXT]);
   const [input, setInput] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll the terminal container to the bottom WITHOUT touching the page scroll
+  // Scroll the terminal container to the bottom 
   useEffect(() => {
     const el = containerRef.current;
     if (el) {
@@ -17,51 +22,128 @@ export default function TerminalApp() {
     }
   }, [history]);
 
-  // Focus the input without scrolling the page
+  // Focus the input 
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true });
   }, []);
 
   const handleCommand = (cmd: string) => {
     const trimmed = cmd.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setHistory(prev => [...prev, `C:>${trimmed}`]);
+      return;
+    }
 
-    setHistory(prev => [...prev, `> ${trimmed}`]);
+    setHistory(prev => [...prev, `C:>${trimmed}`, ""]);
 
-    const parts = trimmed.toLowerCase().split(' ');
-    const command = parts[0];
-    const args = parts.slice(1);
-
-    let output = '';
+    const command = trimmed.toLowerCase();
+    let output: string | string[] = '';
 
     switch (command) {
       case 'help':
-        output = "Available commands: \n- help\n- clear\n- echo [text]\n- whoami\n- date\n- matrix";
+        output = [
+          "Available Commands:",
+          "",
+          "help",
+          "about",
+          "skills",
+          "projects",
+          "experience",
+          "contact",
+          "github",
+          "linkedin",
+          "clear",
+          "dir"
+        ];
+        break;
+      case 'about':
+        output = [
+          "Sahil Kumar",
+          "Full Stack Developer",
+          "",
+          "3+ years experience building web applications using:",
+          "",
+          "React",
+          "Node.js",
+          "TypeScript",
+          "Generative AI"
+        ];
+        break;
+      case 'skills':
+        output = [
+          "Frontend:",
+          "React",
+          "Next.js",
+          "TypeScript",
+          "Tailwind",
+          "",
+          "Backend:",
+          "Node.js",
+          "Express",
+          "MongoDB",
+          "",
+          "AI:",
+          "OpenAI",
+          "LangChain",
+          "Prompt Engineering"
+        ];
+        break;
+      case 'projects':
+        output = [
+          "1. Windows 98 Portfolio OS",
+          "2. AI Job Scraper",
+          "3. Multi-Agent AI Chat Platform",
+          "",
+          'Type "open project1" to learn more.'
+        ];
+        break;
+      case 'experience':
+        output = [
+          "Software Developer",
+          "3 years experience",
+          "",
+          "Specialized in:",
+          "Frontend Architecture",
+          "AI Integrations",
+          "Interactive UI Systems"
+        ];
+        break;
+      case 'contact':
+        output = [
+          "Email: sahil@example.com",
+          "GitHub: github.com/sahil",
+          "LinkedIn: linkedin.com/in/sahil"
+        ];
+        break;
+      case 'github':
+        window.open("https://github.com/sahilkumarsahoo07", "_blank");
+        output = "Opening GitHub...";
+        break;
+      case 'linkedin':
+        window.open("https://in.linkedin.com/in/sahil-kumar-sahoo", "_blank");
+        output = "Opening LinkedIn...";
+        break;
+      case 'dir':
+        output = [
+          "Volume in drive C has no label.",
+          "Directory of C:\\",
+          "",
+          "ABOUT.TXT",
+          "PROJECTS.TXT",
+          "SKILLS.TXT",
+          "CONTACT.TXT"
+        ];
         break;
       case 'clear':
         setHistory([]);
         return;
-      case 'echo':
-        output = args.join(' ');
-        break;
-      case 'whoami':
-        output = "guest_user_99";
-        break;
-      case 'date':
-        output = new Date().toString();
-        break;
-      case 'matrix':
-        output = "Wake up, Neo... \nThe Matrix has you... \nFollow the white rabbit.";
-        break;
-      case 'sudo':
-        output = "NICE TRY. Incident logged.";
-        break;
       default:
-        output = `Command not found: ${command}`;
+        output = "Bad command or file name.";
     }
 
     if (output) {
-      setHistory(prev => [...prev, ...output.split('\n')]);
+      const outputLines = Array.isArray(output) ? output : output.split('\n');
+      setHistory(prev => [...prev, ...outputLines, ""]);
     }
   };
 
@@ -75,22 +157,25 @@ export default function TerminalApp() {
   return (
     <div
       ref={containerRef}
-      className="p-4 h-full bg-black font-body text-xl text-green-500 overflow-y-auto crt-flicker"
+      className="p-2 h-full bg-black font-mono text-[14px] sm:text-base text-[#c0c0c0] overflow-y-auto cursor-text"
+      onClick={() => inputRef.current?.focus()}
     >
-      <div className="whitespace-pre-wrap">
+      <div className="whitespace-pre-wrap leading-tight">
         {history.map((line, i) => (
-          <div key={i}>{line}</div>
+          <div key={i} className="min-h-[1em]">{line}</div>
         ))}
       </div>
-      <div className="flex mt-2">
-        <span className="mr-2">{'>'}</span>
+      <div className="flex leading-tight">
+        <span className="mr-2">C:{'>'}</span>
         <input
           ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          className="flex-1 bg-transparent outline-none text-green-500 font-body shadow-none focus:ring-0"
+          autoComplete="off"
+          spellCheck="false"
+          className="flex-1 bg-transparent outline-none text-[#c0c0c0] font-mono shadow-none focus:ring-0 p-0 m-0 border-none caret-[#c0c0c0]"
         />
       </div>
     </div>

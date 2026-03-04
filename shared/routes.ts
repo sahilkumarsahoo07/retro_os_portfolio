@@ -6,12 +6,16 @@ import {
   profileSchema,
   skillSchema,
   experienceSchema,
+  certificationSchema,
+  achievementSchema,
   type Project,
   type GalleryImage,
   type Message,
   type Profile,
   type Skill,
   type Experience,
+  type Certification,
+  type Achievement,
 } from './schema';
 
 export const errorSchemas = {
@@ -62,7 +66,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/profile' as const,
       responses: {
-        200: profileSchema.extend({ id: z.string() }).nullable(),
+        200: z.custom<Profile>().nullable(),
       },
     },
   },
@@ -71,7 +75,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/skills' as const,
       responses: {
-        200: z.array(skillSchema.extend({ id: z.string() })),
+        200: z.array(z.custom<Skill>()),
       },
     },
   },
@@ -80,7 +84,25 @@ export const api = {
       method: 'GET' as const,
       path: '/api/experience' as const,
       responses: {
-        200: z.array(experienceSchema.extend({ id: z.string() })),
+        200: z.array(z.custom<Experience>()),
+      },
+    },
+  },
+  certifications: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/certifications' as const,
+      responses: {
+        200: z.array(z.custom<Certification>()),
+      },
+    },
+  },
+  achievements: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/achievements' as const,
+      responses: {
+        200: z.array(z.custom<Achievement>()),
       },
     },
   },
@@ -106,3 +128,5 @@ export type MessageResponse = z.infer<typeof api.messages.create.responses[201]>
 export type ProfileResponse = z.infer<typeof api.profile.get.responses[200]>;
 export type SkillsResponse = z.infer<typeof api.skills.list.responses[200]>;
 export type ExperienceResponse = z.infer<typeof api.experience.list.responses[200]>;
+export type CertificationsResponse = z.infer<typeof api.certifications.list.responses[200]>;
+export type AchievementsResponse = z.infer<typeof api.achievements.list.responses[200]>;

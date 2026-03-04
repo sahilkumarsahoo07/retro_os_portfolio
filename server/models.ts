@@ -3,9 +3,10 @@ import mongoose from "mongoose";
 const ProjectSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
-    imageUrl: String,
-    tech: String,
-    link: String,
+    technologies: [String],
+    githubLink: String,
+    liveDemo: String,
+    image: String,
     order: Number,
 });
 
@@ -24,22 +25,36 @@ const MessageSchema = new mongoose.Schema({
 
 const ProfileSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    role: { type: String, required: true },
-    experience: { type: String, required: true },
-    bio: { type: String, required: true },
-    location: { type: String, required: true },
+    title: { type: String, required: true },
+    summary: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    linkedin: { type: String, required: true },
+    github: { type: String, required: true },
 });
 
 const SkillSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    level: { type: Number, required: true },
+    category: { type: String, required: true },
+    skills: [String],
 });
 
 const ExperienceSchema = new mongoose.Schema({
-    title: { type: String, required: true },
     company: { type: String, required: true },
+    role: { type: String, required: true },
     duration: { type: String, required: true },
     description: { type: String, required: true },
+});
+
+const CertificationSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    issuer: { type: String, required: true },
+    year: { type: String, required: true },
+});
+
+const AchievementSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    date: { type: String, required: true },
 });
 
 export const ProjectModel = mongoose.models["Project"] || mongoose.model("Project", ProjectSchema);
@@ -48,3 +63,5 @@ export const MessageModel = mongoose.models["Message"] || mongoose.model("Messag
 export const ProfileModel = mongoose.models["Profile"] || mongoose.model("Profile", ProfileSchema);
 export const SkillModel = mongoose.models["Skill"] || mongoose.model("Skill", SkillSchema);
 export const ExperienceModel = mongoose.models["Experience"] || mongoose.model("Experience", ExperienceSchema);
+export const CertificationModel = mongoose.models["Certification"] || mongoose.model("Certification", CertificationSchema);
+export const AchievementModel = mongoose.models["Achievement"] || mongoose.model("Achievement", AchievementSchema);

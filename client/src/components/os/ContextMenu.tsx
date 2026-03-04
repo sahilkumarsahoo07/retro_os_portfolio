@@ -20,7 +20,7 @@ interface MenuItem {
 
 export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
-    const { refreshDesktop, arrangeIcons, addDesktopItem, deleteDesktopItem, updateDesktopItem, openWindow, desktopItems } = useOS();
+    const { refreshDesktop, arrangeIcons, addDesktopItem, deleteDesktopItem, updateDesktopItem, openWindow, desktopItems, moveToRecycleBin, recycleBinItems, emptyRecycleBin, showSystemDialog, showDeleteConfirm } = useOS();
     const [activeSubmenu, setActiveSubmenu] = useState<number | null>(null);
     const submenuTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -82,9 +82,30 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
     ];
 
     const targetItem = desktopItems.find(i => i.id === targetItemId);
+    const isRecycleBin = targetItem?.appId === 'recycle-bin';
 
     const iconMenuItems: MenuItem[] = [
-        { label: 'Open', bold: true, onClick: () => { if (targetItem?.appId) openWindow(targetItem.appId as AppID); onClose(); } },
+        {
+            label: 'Open',
+            bold: true,
+            onClick: () => {
+                const { startTransition } = React;
+                if (targetItem?.appId) {
+                    startTransition(() => {
+                        openWindow(targetItem.appId as AppID);
+                    });
+                } else if (targetItem?.name.toLowerCase().endsWith('.txt')) {
+                    startTransition(() => {
+                        openWindow('notepad', { item: targetItem }, targetItem.id);
+                    });
+                } else if (targetItem?.type === 'folder') {
+                    startTransition(() => {
+                        openWindow('folder-explorer', { item: targetItem }, targetItem.id);
+                    });
+                }
+                onClose();
+            }
+        },
         { label: 'Explore', disabled: true },
         { label: 'Find...', disabled: true },
         { type: 'separator' },
@@ -94,8 +115,25 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
         { label: 'Copy', disabled: true },
         { type: 'separator' },
         { label: 'Create Shortcut', disabled: true },
-        { label: 'Delete', onClick: () => { if (targetItemId) deleteDesktopItem(targetItemId); onClose(); } },
-        { label: 'Rename', onClick: () => { if (targetItemId) updateDesktopItem(targetItemId, { isRenaming: true }); onClose(); } },
+        ...(!isRecycleBin ? [
+            {
+                label: 'Delete', onClick: () => {
+                    if (targetItemId && targetItem) {
+                        if (targetItem.isSystem) {
+                            showSystemDialog("Error", "You cannot delete this system icon.", "error");
+                        } else {
+                            // Using standard browser confirm for simplicity of logic flow here, 
+                            // though showSystemDialog exists, it doesn't currently support callbacks in its state.
+                            showDeleteConfirm(targetItem);
+                        }
+                    }
+                    onClose();
+                }
+            } as MenuItem,
+            { label: 'Rename', onClick: () => { if (targetItemId) updateDesktopItem(targetItemId, { isRenaming: true }); onClose(); } } as MenuItem,
+        ] : [
+            { label: 'Empty Recycle Bin', disabled: recycleBinItems.length === 0, onClick: () => { emptyRecycleBin(); onClose(); } } as MenuItem,
+        ]),
         { type: 'separator' },
         { label: 'Properties', disabled: true },
     ];

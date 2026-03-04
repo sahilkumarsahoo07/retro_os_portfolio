@@ -32,54 +32,76 @@
   --win-teal: #008080;
 }
 
-.theme-win98 body {
+/* Apply Win98 arrow cursor to the ENTIRE page */
+html {
+  background-color: #008080;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='19'%3E%3Cpolygon points='1,1 1,15 4,12 7,18 9,17 6,11 10,11' fill='black' stroke='white' stroke-width='0.8'/%3E%3C/svg%3E") 1 1, default !important;
+}
+
+body {
   background-color: #008080;
   color: #000;
-  font-family: var(--font-body);
-  /* Classic Arrow */
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAYCAYAAAD9bx+IAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAd0lEQVR4nGNgGFjAOKiAAVmclZWNpIKBEZ9uRhzi+PTD6SAnJwNJDZ9uJB0kJSXx6UfSQWJiAp9+mC2YmJjApx9uCyYmRvDph9uCiYmRCH24LVhZWEjXh9uClZWVdH2ELVhYWEjXh9uClZWVdH2ELRhYIDKAgYFMBgAAHAYvAeeG/S0AAAAASUVORK5CYII='), default;
+  font-family: 'MS Sans Serif', Tahoma, Arial, sans-serif;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='19'%3E%3Cpolygon points='1,1 1,15 4,12 7,18 9,17 6,11 10,11' fill='black' stroke='white' stroke-width='0.8'/%3E%3C/svg%3E") 1 1, default !important;
+}
+
+*,
+*::before,
+*::after {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='19'%3E%3Cpolygon points='1,1 1,15 4,12 7,18 9,17 6,11 10,11' fill='black' stroke='white' stroke-width='0.8'/%3E%3C/svg%3E") 1 1, default !important;
+}
+
+.theme-win98 {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='19'%3E%3Cpolygon points='1,1 1,15 4,12 7,18 9,17 6,11 10,11' fill='black' stroke='white' stroke-width='0.8'/%3E%3C/svg%3E") 1 1, default !important;
 }
 
 .theme-win98 a,
 .theme-win98 button,
 .theme-win98 [role="button"],
 .theme-win98 .cursor-pointer {
-  /* Classic Hand Pointer */
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAYCAYAAAD9bx+IAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAm0lEQVR4nO2VQQqCQBRFvxXRTidp4SaaoU0rN9BOH0Ldo0u0y42kW7SJRp2hK/QT/WwIdREK7fQj8mCYaBD9oOEHLz3m8Z6B+ccYI5x0XUvX9UhK17U46ZomVqGqSqSClK7pYBWkqkqkgpSu6WAVpKpKpIKUrukwC8CisAis/6OwCKwKKy4D8AhW4YnLADyCdZf8CMAmWImULvlpPwIwCWZ0TT/tRwBmIUrXdOg6P/1tD8C6pifT2CclUrrkr/0IwIiu6UlK/+0HsDmsm/YDP76E6L1CFr0AAAAASUVORK5CYII='), pointer;
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='19'%3E%3Cpolygon points='1,1 1,15 4,12 7,18 9,17 6,11 10,11' fill='black' stroke='white' stroke-width='0.8'/%3E%3C/svg%3E") 1 1, pointer !important;
 }
 
 .theme-win98 input,
 .theme-win98 textarea,
 .theme-win98 .cursor-text {
-  /* Classic I-Beam / Text Select (using system text for now as it's pixelated enough, or base64 if needed, but system 'text' usually suffices if styled)
-     Actually, let's use a base64 I-Beam for total accuracy. */
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAUCAYAAABbLMkEAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAWElEQVQokWNgwA0qoPz/UAwkwITPBUjixIInmBiG/2BiWBiGg2QxMAyhSBE0BxtgB+L/UHgUDyKk4eADRgYGBiZM14gVfwqXAjB+QjQAAK2nDx0D40lYDAAMKxkRSEn5cQAAAABJRU5ErkJggg==') 5 10, text;
+  /* I-Beam: 5x15px */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='15'%3E%3Crect x='0' y='0' width='5' height='1.5' fill='black'/%3E%3Crect x='2' y='1.5' width='1' height='11' fill='black'/%3E%3Crect x='0' y='13' width='5' height='1.5' fill='black'/%3E%3C/svg%3E") 2 7, text !important;
 }
 
 .theme-win98 .cursor-wait {
-  /* Classic Hourglass */
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAXCAYAAAALHW+jAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA0UlEQVQ4y2NgGPqAEQv+zySExmdE4zPi0YxLE7rB/2H4//9/MM3IwMDAiE8Tshg2mzCMxWUTshg2mzDMxOUTvAHTl4AunxANmNHEhMRnROMz4jHqN6FpwC9cJiEax2eTKA2YfgR0+YQo4IRm8H8Y/v//Pwjd4P+EaMCMYiYkPiMaHxjBmzSiaUADsL74P5Pwwv8w/P//fwb1zWDsXgZ2NMMzivHT//8wzcjAwMCIbgc2PjOamJBUjWgeIFUvIFMvYBh2IuMzoqmZ1Dw1aoDRAADm7V7k2+36uAAAAABJRU5ErkJggg==') 10 11, wait;
+  /* Hourglass: use system wait as SVG is complex */
+  cursor: wait !important;
 }
 
-.theme-win98 .cursor-move {
-  /* Classic Move (Four-way arrow) */
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAACXBIWXMAAAsTAAALEwEAmpwYAAAA20lEQVQ4je2V0Q3CIBhGbwHcwS10B27hDtwB3IE7iCN0B3CE+2NKSWkvtbSJvuRLyA9/4OWSEK1rQpQ64AAcE5vAA0hNnAMzMCd2A1qS2YAXMBG5jFfgQGR1hT2BVX0K3IEOGAEH18BqQc8/gSOwADe/x1fXp11N6E2A/aQc4OARWG0Zf0tJ5M304Y692ZfY5yWyL7GryD4vB7gAG7AATt113e6E3iXY9Ltk0O+SQR8kgy5IBl2SDPo26E2ALw34cwbP8b3gK/i9wEewAybgtuF/gRnwBvIfT2k2nQ06t+13p+4AAAAASUVORK5CYII=') 11 11, move;
+.theme-win98 .cursor-move,
+.theme-win98 [class*="cursor-move"] {
+  /* 4-way move arrow: 13x13px */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpolygon points='6.5,0 9,3.5 7.5,3.5 7.5,5.5 9.5,5.5 9.5,4 13,6.5 9.5,9 9.5,7.5 7.5,7.5 7.5,9.5 9,9.5 6.5,13 4,9.5 5.5,9.5 5.5,7.5 3.5,7.5 3.5,9 0,6.5 3.5,4 3.5,5.5 5.5,5.5 5.5,3.5 4,3.5' fill='black' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E") 6 6, move !important;
 }
 
-.theme-win98 .cursor-ns-resize {
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAXCAYAAAAGw/ZPAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAvklEQVQ4je2V0Q3CMAxErwEbgA3YgA3QEZgBG4AN2IAO0BHYAB2gI3CE92NKRZtGqWmjD33JVxJf/jhJCE2QEI8WWAH9zN4BR+AMrD1qD9w98ggcvcoZeAITcJpY98rB/B+gAdZeqZ/wvwHtgZtX2gFnjx4B28u7hXgBvUf1Z2rT/s1/q8h9Q5H7hiL3DQdyr1hL5vUFNh9s7M8hR+sX+7PIcUNp//rTfxqTz05LwM870/8D9sAZOJgA1sCpB6d36wU2D3n1f5o1kQAAAABJRU5ErkJggg==') 9 11, ns-resize;
+.theme-win98 .cursor-ns-resize,
+.cursor-ns-resize {
+  /* NS resize: 7x14px */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='14'%3E%3Cpolygon points='3.5,0 7,4 5,4 5,10 7,10 3.5,14 0,10 2,10 2,4 0,4' fill='black' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E") 3 7, ns-resize !important;
 }
 
-.theme-win98 .cursor-ew-resize {
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAASCAYAAACw50UTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAuUlEQVQ4je2UzQ3CMAxG3wEbgA3aAdsBHIEjYAO0ARugDdoBGoEjcARH4H2sUFGTRv2ojT7pSqntH5+ctISUkhBxqYEFMDXsm8AGuAKHhrYBLg1rD9wavn3B+T1ADySNaAdcGlYB128Yy5FhN63i3zFsN60+gJv9r3T1k0U13M0LzR+A2/RkGdzNC80fgG+Tq9n18i3qG8uN4PjZ0NqI21sD9w1b11Z9+2e8D/AGBmA3vB1wAzZgaoR3w1HNB/nFe7i7n9eIAAAAAElFTkSuQmCC') 11 9, ew-resize;
+.theme-win98 .cursor-ew-resize,
+.cursor-ew-resize {
+  /* EW resize: 14x7px */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='7'%3E%3Cpolygon points='0,3.5 4,0 4,2 10,2 10,0 14,3.5 10,7 10,5 4,5 4,7' fill='black' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E") 7 3, ew-resize !important;
 }
 
-.theme-win98 .cursor-nwse-resize {
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABCG7MBAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA0UlEQVQ4jd2U0Q3CIBhG3wHcwS10hHKEbcQRjMEtnMFHwBHYgDswg9+PKRVtGrWmjT7pS+B4vOAlITRDCfFqgQtwMuwNOAMb4GAoHjicugL6fC7ZARdwcNoFmIAZ2AFb4AKsjnIAZsc2gB5YPqF7zWqgB5xM6B6zXoAbMDoK0VlHIf6oSN2n3yuiyR1z2cQ15O/wE/gV5D1jVci/p8Jz2d/g+B4qFPI9/C0q2t5I2jW9fJ8j1r6eF3v5831/eXl70X+gN+ABTCZ0Jv1WwAOYDXsD3i24A8eDfo8AAAAASUVORK5CYII=') 9 9, nwse-resize;
+.theme-win98 .cursor-nwse-resize,
+.cursor-nwse-resize {
+  /* NWSE resize: 13x13px */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpolygon points='0,0 5,0 5,1.5 1.5,1.5 1.5,5 0,5' fill='black' stroke='white' stroke-width='0.5'/%3E%3Cpolygon points='8,11.5 11.5,11.5 11.5,8 13,8 13,13 8,13' fill='black' stroke='white' stroke-width='0.5'/%3E%3Cline x1='0.5' y1='0.5' x2='12.5' y2='12.5' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") 6 6, nwse-resize !important;
 }
 
-.theme-win98 .cursor-nesw-resize {
-  cursor: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABCG7MBAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAy0lEQVQ4jd2U2w3CMAyGrwEbgA3YAB2BDdAB2qEboR2gI3QENkBDYITeQ6koTRolaqMneZKV/PjlpCGEQQlxZYENsHXMDrgCZ2A2FB24OE0FLvlcsgce4OJUO6ADFmAINsAFWBx5A0bHJoA2WD2hd00XoAX2Tuhd0xvwABpHOVprRzm+VISe028VUfMeY7lEK+TvwCv4EaQ1Y5WQvz0Vx7Ke4HAelQqFHA8/iopzN+KsU8mXOUKsq+eij58v96+nFyv6D7QHvoDJEEzjXwp8ABOhFzVfclgAAAAASUVORK5CYII=') 9 9, nesw-resize;
+.theme-win98 .cursor-nesw-resize,
+.cursor-nesw-resize {
+  /* NESW resize: 13x13px */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpolygon points='13,0 8,0 8,1.5 11.5,1.5 11.5,5 13,5' fill='black' stroke='white' stroke-width='0.5'/%3E%3Cpolygon points='5,11.5 1.5,11.5 1.5,8 0,8 0,13 5,13' fill='black' stroke='white' stroke-width='0.5'/%3E%3Cline x1='12.5' y1='0.5' x2='0.5' y2='12.5' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E") 6 6, nesw-resize !important;
 }
 
 .theme-win98 .win98-outset {
@@ -102,7 +124,27 @@
 }
 
 .theme-win98 .win98-button {
-  @apply bg-[#c0c0c0] px-2 py-0.5 border-t border-l border-white border-r-2 border-r-gray-800 border-b-2 border-b-gray-800 active:border-t-2 active:border-l-2 active:border-white active:border-r active:border-b active:border-gray-800 active:pt-1 active:pl-1 transition-none;
+  @apply bg-[#c0c0c0] px-2 py-0.5 border-t border-l border-white border-r-2 border-r-black border-b-2 border-b-black active:border-t-2 active:border-l-2 active:border-white active:border-r active:border-b active:border-black active:pt-1 active:pl-1 transition-none;
+}
+
+.theme-win98 .win98-title-button {
+  @apply bg-[#c0c0c0] w-[16px] h-[14px] p-0 flex items-center justify-center transition-none outline-none;
+  /* Classic Win98 Outset Border */
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+  border-right: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+}
+
+.theme-win98 .win98-title-button:active {
+  /* Classic Win98 Inset Border */
+  border-top: 1px solid #000000;
+  border-left: 1px solid #000000;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #dfdfdf;
+  @apply pt-[1px] pl-[1px];
 }
 
 /* --- Global Overrides --- */
@@ -123,16 +165,63 @@
 }
 
 /* Scrollbar handling */
+.theme-win98 {
+  scrollbar-color: #c0c0c0 #dfdfdf;
+  /* Fallback for Firefox */
+  scrollbar-width: auto;
+}
+
 .theme-win98 ::-webkit-scrollbar {
   width: 16px;
   height: 16px;
-  background: #dfdfdf;
+  background: repeating-conic-gradient(#dfdfdf 0% 25%, #fff 0% 50%) 50% / 2px 2px;
 }
 
 .theme-win98 ::-webkit-scrollbar-thumb {
   background: #c0c0c0;
-  box-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
-  border: 1px solid #c0c0c0;
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #808080, inset 2px 2px #dfdfdf, inset -2px -2px #000;
+  /* Slightly more complex inset to achieve the true 98 look */
+}
+
+/* Arrow Buttons */
+.theme-win98 ::-webkit-scrollbar-button {
+  background-color: #c0c0c0;
+  display: block;
+  height: 16px;
+  width: 16px;
+  background-repeat: no-repeat;
+  background-position: center;
+  box-shadow: inset 1px 1px #fff, inset -1px -1px #000, inset 2px 2px #dfdfdf, inset -2px -2px #808080;
+}
+
+.theme-win98 ::-webkit-scrollbar-button:active {
+  box-shadow: inset 1px 1px #000, inset -1px -1px #fff, inset 2px 2px #808080, inset -2px -2px #dfdfdf;
+  background-position: calc(50% + 1px) calc(50% + 1px);
+}
+
+/* Up Arrow */
+.theme-win98 ::-webkit-scrollbar-button:vertical:decrement {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='4'><polygon points='3.5,0 7,4 0,4' fill='black'/></svg>");
+}
+
+/* Down Arrow */
+.theme-win98 ::-webkit-scrollbar-button:vertical:increment {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='4'><polygon points='0,0 7,0 3.5,4' fill='black'/></svg>");
+}
+
+/* Left Arrow */
+.theme-win98 ::-webkit-scrollbar-button:horizontal:decrement {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='7'><polygon points='4,0 4,7 0,3.5' fill='black'/></svg>");
+}
+
+/* Right Arrow */
+.theme-win98 ::-webkit-scrollbar-button:horizontal:increment {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='7'><polygon points='0,0 0,7 4,3.5' fill='black'/></svg>");
+}
+
+/* Scrollbar Corner */
+.theme-win98 ::-webkit-scrollbar-corner {
+  background: #c0c0c0;
 }
 
 /* Win98 Context Menu Styles */

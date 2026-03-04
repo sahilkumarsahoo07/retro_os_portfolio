@@ -12,12 +12,23 @@ export default function Window({ windowState }: { windowState: WindowState }) {
     desktopRef,
     updateWindowSize,
     updateWindowPosition,
+    desktopItems,
   } = useOS();
 
   const windowRef = useRef<HTMLDivElement>(null);
-  const app = APPS[windowState.id];
+  const app = APPS[windowState.appId];
   const isActive = activeWindowId === windowState.id;
   const isMaximized = windowState.isMaximized;
+
+  // Find origin icon position if this window was just opened
+  const getIconPosition = () => {
+    const icon = desktopItems.find(item => item.appId === windowState.id);
+    if (icon) return { x: icon.x + 40, y: icon.y + 40 }; // Target center of icon
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  };
+
+  const iconPos = getIconPosition();
+  const lastTrigger = windowState.lastTrigger || 'open';
 
   const [localSize, setLocalSize] = useState({
     width: windowState.width || (app?.defaultWidth || 600),
@@ -73,8 +84,11 @@ export default function Window({ windowState }: { windowState: WindowState }) {
       const winWidth = winEl.offsetWidth;
       const winHeight = winEl.offsetHeight;
 
-      newLeft = Math.max(0, Math.min(newLeft, desktopRect.width - winWidth));
-      newTop = Math.max(0, Math.min(newTop, desktopRect.height - winHeight));
+      const vpW = desktopRect.width > 0 ? desktopRect.width : window.innerWidth;
+      const vpH = desktopRect.height > 0 ? desktopRect.height : window.innerHeight - 28;
+
+      newLeft = Math.max(0, Math.min(newLeft, vpW - winWidth));
+      newTop = Math.max(0, Math.min(newTop, vpH - winHeight));
 
       // DIRECT DOM UPDATE: Bypass React state for 1:1 tracking
       winEl.style.left = `${newLeft}px`;
@@ -99,29 +113,89 @@ export default function Window({ windowState }: { windowState: WindowState }) {
   };
 
   // --- Resize logic ---
-  const handleResizeStart = (e: React.PointerEvent) => {
+  const handleResizeStart = (e: React.PointerEvent, direction: string) => {
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
     focusWindow(windowState.id);
 
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const winEl = windowRef.current;
+    if (!winEl || !desktopRef.current) return;
 
+    winEl.setPointerCapture(e.pointerId);
+
+    const desktopRect = desktopRef.current.getBoundingClientRect();
     const startX = e.clientX;
     const startY = e.clientY;
-    const startWidth = localSize.width;
-    const startHeight = localSize.height;
+
+    const startWidth = winEl.offsetWidth;
+    const startHeight = winEl.offsetHeight;
+    const startLeft = windowState.x ?? 0;
+    const startTop = windowState.y ?? 0;
+
+    let animationFrameId: number;
 
     const onPointerMove = (moveEvent: PointerEvent) => {
-      const newWidth = Math.max(300, startWidth + (moveEvent.clientX - startX));
-      const newHeight = Math.max(200, startHeight + (moveEvent.clientY - startY));
-      setLocalSize({ width: newWidth, height: newHeight });
+      if (!winEl) return;
+
+      const deltaX = moveEvent.clientX - startX;
+      const deltaY = moveEvent.clientY - startY;
+
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      let newLeft = startLeft;
+      let newTop = startTop;
+
+      const vpW = desktopRect.width > 0 ? desktopRect.width : window.innerWidth;
+      const vpH = desktopRect.height > 0 ? desktopRect.height : window.innerHeight - 28;
+
+      // Handle directions with boundary constraints
+      if (direction.includes('e')) {
+        const maxWidth = vpW - startLeft;
+        newWidth = Math.max(300, Math.min(startWidth + deltaX, maxWidth));
+      }
+      if (direction.includes('w')) {
+        const potentialWidth = Math.max(300, startWidth - deltaX);
+        const maxPotentialLeft = startLeft + (startWidth - 300);
+        newLeft = Math.max(0, Math.min(startLeft + deltaX, maxPotentialLeft));
+        newWidth = startWidth + (startLeft - newLeft);
+      }
+      if (direction.includes('s')) {
+        const maxHeight = vpH - startTop;
+        newHeight = Math.max(200, Math.min(startHeight + deltaY, maxHeight));
+      }
+      if (direction.includes('n')) {
+        const potentialHeight = Math.max(200, startHeight - deltaY);
+        const maxPotentialTop = startTop + (startHeight - 200);
+        newTop = Math.max(0, Math.min(startTop + deltaY, maxPotentialTop));
+        newHeight = startHeight + (startTop - newTop);
+      }
+
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+      animationFrameId = requestAnimationFrame(() => {
+        // Direct DOM Update tied to browser paint
+        winEl.style.width = `${newWidth}px`;
+        winEl.style.height = `${newHeight}px`;
+        winEl.style.left = `${newLeft}px`;
+        winEl.style.top = `${newTop}px`;
+      });
     };
 
     const onPointerUp = (upEvent: PointerEvent) => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       setIsResizing(false);
-      updateWindowSize(windowState.id, localSize.width, localSize.height);
-      try { (upEvent.target as HTMLElement).releasePointerCapture(upEvent.pointerId); } catch { }
+
+      const finalWidth = winEl.offsetWidth;
+      const finalHeight = winEl.offsetHeight;
+      const finalLeft = parseInt(winEl.style.left);
+      const finalTop = parseInt(winEl.style.top);
+
+      setLocalSize({ width: finalWidth, height: finalHeight });
+      updateWindowSize(windowState.id, finalWidth, finalHeight);
+      updateWindowPosition(windowState.id, finalLeft, finalTop);
+
+      try { winEl.releasePointerCapture(upEvent.pointerId); } catch { }
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
     };
@@ -132,30 +206,48 @@ export default function Window({ windowState }: { windowState: WindowState }) {
 
   if (!windowState.isOpen || windowState.isMinimized) return null;
 
+  const variants = {
+    initial: {
+      opacity: (lastTrigger === 'load' || lastTrigger === 'refresh') ? 1 : (lastTrigger === 'restore' ? 0.6 : 0),
+      scale: (lastTrigger === 'load' || lastTrigger === 'refresh') ? 1 : (lastTrigger === 'restore' ? 0.85 : 0.7),
+      x: lastTrigger === 'open' ? (iconPos.x - (windowState.x ?? 0)) : (lastTrigger === 'restore' ? 0 : 0),
+      y: lastTrigger === 'open' ? (iconPos.y - (windowState.y ?? 0)) : (lastTrigger === 'restore' ? 100 : 0),
+      transition: { duration: 0 }
+    },
+    animate: {
+      opacity: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+      width: isMaximized ? '100%' : localSize.width,
+      height: isMaximized ? '100%' : localSize.height,
+      left: isMaximized ? 0 : (windowState.x ?? 0),
+      top: isMaximized ? 0 : (windowState.y ?? 0),
+    },
+    exit: {
+      opacity: 0,
+      scale: lastTrigger === 'minimize' ? 0.8 : 0.85,
+      y: lastTrigger === 'minimize' ? 200 : 0,
+      transition: { duration: 0.12, ease: "easeIn" }
+    }
+  };
+
   return (
     <motion.div
       ref={windowRef}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-        width: isMaximized ? '100%' : localSize.width,
-        height: isMaximized ? '100%' : localSize.height,
-        // ✅ FIX: Always pass a valid number — never undefined.
-        // During dragging, style.left/top is controlled by direct DOM, but Framer Motion
-        // still needs a value here so it doesn't animate to 0. We keep passing the last
-        // known state position; the inline style set during drag overrides it with no flicker.
-        left: isMaximized ? 0 : (windowState.x ?? 0),
-        top: isMaximized ? 0 : (windowState.y ?? 0),
-      }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      variants={variants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
       transition={{
-        duration: 0.12,
+        duration: 0.15,
+        ease: "easeOut",
         width: { duration: isResizing ? 0 : 0.12 },
         height: { duration: isResizing ? 0 : 0.12 },
-        // Snap position instantly — no sliding animation on position changes
         left: { duration: 0 },
-        top: { duration: 0 }
+        top: { duration: 0 },
+        x: { duration: 0.15 },
+        y: { duration: 0.15 }
       }}
       style={{
         zIndex: windowState.zIndex,
@@ -164,47 +256,73 @@ export default function Window({ windowState }: { windowState: WindowState }) {
         touchAction: 'none',
         boxSizing: 'border-box'
       }}
-      className="win98-window shadow-[4px_4px_15px_rgba(0,0,0,0.4)] flex flex-col will-change-[left,top]"
+      className="win98-window shadow-[4px_4px_15px_rgba(0,0,0,0.4)] flex flex-col"
       onPointerDown={() => focusWindow(windowState.id)}
     >
-      {/* Titlebar acts as the drag handle */}
+      {/* Resize Handles - Only visible if not maximized */}
+      {!isMaximized && (
+        <>
+          {/* NS: vertical double-arrow */}
+          <div className="absolute top-0 left-4 right-4 h-1.5 z-[60] -mt-[1px] cursor-ns-resize" onPointerDown={e => handleResizeStart(e, 'n')} />
+          <div className="absolute bottom-0 left-4 right-4 h-1.5 z-[60] -mb-[1px] cursor-ns-resize" onPointerDown={e => handleResizeStart(e, 's')} />
+          {/* EW: horizontal double-arrow */}
+          <div className="absolute left-0 top-4 bottom-4 w-1.5 z-[60] -ml-[1px] cursor-ew-resize" onPointerDown={e => handleResizeStart(e, 'w')} />
+          <div className="absolute right-0 top-4 bottom-4 w-1.5 z-[60] -mr-[1px] cursor-ew-resize" onPointerDown={e => handleResizeStart(e, 'e')} />
+
+          {/* NW-SE corner */}
+          <div className="absolute top-0 left-0 w-4 h-4 z-[70] cursor-nwse-resize" onPointerDown={e => handleResizeStart(e, 'nw')} />
+          {/* NE-SW corner */}
+          <div className="absolute top-0 right-0 w-4 h-4 z-[70] cursor-nesw-resize" onPointerDown={e => handleResizeStart(e, 'ne')} />
+          <div className="absolute bottom-0 left-0 w-4 h-4 z-[70] cursor-nesw-resize" onPointerDown={e => handleResizeStart(e, 'sw')} />
+          <div className="absolute bottom-0 right-0 w-4 h-4 z-[70] cursor-nwse-resize" onPointerDown={e => handleResizeStart(e, 'se')} />
+        </>
+      )}
+
+      {/* Titlebar — 4-way move arrow */}
       <div
         className={`h-[18px] px-1 py-[2px] m-[2px] flex items-center justify-between select-none 
           ${isActive ? 'bg-[#000080]' : 'bg-[#808080]'}
-          ${isMaximized ? '' : 'cursor-default'}`}
+          ${isMaximized ? '' : 'cursor-move'}`}
         onPointerDown={handleDragStart}
         onDoubleClick={() => toggleMaximize(windowState.id)}
       >
         <div className="flex items-center gap-1 overflow-hidden pointer-events-none text-white">
           {app?.iconUrl && <img src={app.iconUrl} alt="" className="w-4 h-4 pixelated flex-shrink-0" />}
           <span className="text-[11px] font-bold truncate leading-tight mt-[1px]">
-            {app?.title || 'Unknown App'}
+            {windowState.appId === 'notepad' && windowState.params?.item?.name
+              ? `${windowState.params.item.name} - Notepad`
+              : windowState.appId === 'folder-explorer' && windowState.params?.item?.name
+                ? windowState.params.item.name
+                : (app?.title || 'Unknown App')}
           </span>
         </div>
 
-        <div className="flex items-center gap-[2px] pl-1" onPointerDown={e => e.stopPropagation()}>
+        <div className="flex items-center gap-[2px] pl-1 pr-[2px] relative z-[80]" onPointerDown={e => e.stopPropagation()}>
           <button
             onClick={() => minimizeWindow(windowState.id)}
-            className="win98-button w-[14px] h-[14px] flex items-center justify-center p-0"
+            className="win98-title-button"
+            title="Minimize"
           >
-            <svg width="6" height="2" viewBox="0 0 6 2" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-[6px]">
+            <svg width="6" height="2" viewBox="0 0 6 2" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-[7px]">
               <rect width="6" height="2" fill="black" />
             </svg>
           </button>
 
           <button
             onClick={() => toggleMaximize(windowState.id)}
-            className="win98-button w-[14px] h-[14px] flex items-center justify-center p-0"
+            className="win98-title-button"
+            title={isMaximized ? "Restore" : "Maximize"}
           >
             {isMaximized ? (
-              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 0H8V6H7V7H1V1H2V0Z" fill="#C0C0C0" />
-                <path d="M2 0H8V1H2V0Z" fill="black" />
-                <path d="M7 1H8V6H7V1Z" fill="black" />
-                <path d="M1 3H7V4H1V3Z" fill="black" />
-                <path d="M1 3H2V8H1V3Z" fill="black" />
-                <path d="M1 8H7V9H1V8Z" fill="black" />
-                <path d="M6 4H7V8H6V4Z" fill="black" />
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 0H9V1H2V0Z" fill="black" />
+                <path d="M2 1H3V6H2V1Z" fill="black" />
+                <path d="M8 1H9V6H8V1Z" fill="black" />
+                <path d="M2 5H9V6H2V5Z" fill="black" />
+                <path d="M0 3H7V4H0V3Z" fill="black" />
+                <path d="M0 4H1V9H0V4Z" fill="black" />
+                <path d="M6 4H7V9H6V4Z" fill="black" />
+                <path d="M0 8H7V9H0V8Z" fill="black" />
               </svg>
             ) : (
               <svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -220,7 +338,8 @@ export default function Window({ windowState }: { windowState: WindowState }) {
 
           <button
             onClick={(e) => { e.stopPropagation(); closeWindow(windowState.id); }}
-            className="win98-button w-[14px] h-[14px] flex items-center justify-center p-0"
+            className="win98-title-button"
+            title="Close"
           >
             <svg width="8" height="7" viewBox="0 0 8 7" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M0 0H2V1H3V2H5V1H6V0H8V1H7V2H6V3H5V4H6V5H7V6H8V7H6V6H5V5H3V6H2V7H0V6H1V5H2V4H3V3H2V2H1V1H0V0Z" fill="black" />
@@ -230,7 +349,7 @@ export default function Window({ windowState }: { windowState: WindowState }) {
       </div>
 
       {/* Menu bar */}
-      {windowState.id !== 'terminal' && (
+      {app?.showMenuBar && (
         <div className="bg-[#c0c0c0] px-1 py-0.5 mx-[2px] border-b border-[#dfdfdf] flex gap-2 text-[11px] select-none">
           <span className="cursor-default px-1 hover:bg-[#000080] hover:text-white"><u>F</u>ile</span>
           <span className="cursor-default px-1 hover:bg-[#000080] hover:text-white"><u>E</u>dit</span>
@@ -241,20 +360,14 @@ export default function Window({ windowState }: { windowState: WindowState }) {
 
       {/* Content Area */}
       <div className="flex-1 overflow-auto relative cursor-default bg-white border-t-2 border-l-2 border-[#808080] border-r border-b border-white m-[2px]">
-        {app?.component && <app.component onClose={() => closeWindow(windowState.id)} />}
+        {app?.component && (
+          <app.component
+            onClose={() => closeWindow(windowState.id)}
+            type={windowState.id}
+            params={windowState.params}
+          />
+        )}
       </div>
-
-      {/* Resize Handle */}
-      {!isMaximized && (
-        <div
-          className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize z-50 flex items-end justify-end pointer-events-auto"
-          onPointerDown={handleResizeStart}
-        >
-          <svg width="10" height="10" viewBox="0 0 10 10" className="opacity-40 mb-[1px] mr-[1px]">
-            <path d="M9 9H7V7h2v2zm0-4H7V3h2v2zm-4 4H3V7h2v2zm4-8H7V1h2v2z" fill="#000" />
-          </svg>
-        </div>
-      )}
     </motion.div>
   );
 }

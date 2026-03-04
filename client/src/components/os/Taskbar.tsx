@@ -38,8 +38,14 @@ export default function Taskbar() {
           {/* Open Apps */}
           <div className="flex items-center gap-[4px] h-full overflow-x-hidden ml-1">
             {openWindows.map(w => {
-              const app = APPS[w.id];
+              const app = APPS[w.appId];
               const isActive = activeWindowId === w.id && !w.isMinimized;
+              const title = w.appId === 'notepad' && w.params?.item?.name
+                ? `${w.params.item.name} - Notepad`
+                : w.appId === 'folder-explorer' && w.params?.item?.name
+                  ? w.params.item.name
+                  : (app?.title || 'Unknown App');
+
               return (
                 <button
                   key={w.id}
@@ -47,11 +53,11 @@ export default function Taskbar() {
                     if (w.isMinimized) restoreWindow(w.id);
                     else focusWindow(w.id);
                   }}
-                  className={`h-[22px] px-2 flex items-center gap-1 max-w-[160px] truncate transition-none
+                  className={`h-[22px] px-2 flex items-center gap-1 min-w-[100px] max-w-[160px] truncate transition-none
                     ${isActive ? 'win98-inset font-bold bg-[#dfdfdf]' : 'win98-button'}`}
                 >
-                  <img src={app.iconUrl} alt="" className="w-4 h-4" />
-                  <span className="truncate text-xs">{app.title}</span>
+                  <img src={app?.iconUrl} alt="" className="w-4 h-4 pixelated" />
+                  <span className="truncate text-xs">{title}</span>
                 </button>
               );
             })}

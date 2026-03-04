@@ -1,9 +1,11 @@
 import React from 'react';
+import { useOS } from '../os/OSProvider';
 import { useProjects } from '@/hooks/use-projects';
 import { Loader2, AlertCircle } from 'lucide-react';
 import FolderApp, { FileItem } from './FolderApp';
 
 export default function ProjectsApp() {
+  const { openWindow } = useOS();
   const { data: projects, isLoading, error } = useProjects();
 
   if (isLoading) {
@@ -37,7 +39,7 @@ export default function ProjectsApp() {
     // Use an executable or document icon.
     iconUrl: 'https://win98icons.alexmeub.com/icons/png/executable_script-0.png',
     onDoubleClick: () => {
-      if (p.link) window.open(p.link, '_blank');
+      openWindow('project-details', p);
     }
   }));
 
