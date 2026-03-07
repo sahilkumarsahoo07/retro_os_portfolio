@@ -1,19 +1,27 @@
 import * as express from "express";
 import type { Express } from "express";
-
-const expressApp = (express as any).default || express;
-import path, { dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { log } from "./index";
+import path from "path";
 
 export function serveStatic(app: Express) {
-    const distPath = path.resolve(__dirname, "..", "dist", "public");
-    app.use(expressApp.static(distPath));
+    const rootDir = process.cwd();
+    const publicPath = path.resolve(rootDir, "dist", "public");
+    const indexPath = path.resolve(publicPath, "index.html");
 
-    // Fallback for SPA
-    app.get("*", (_req, res) => {
-        res.sendFile(path.resolve(distPath, "index.html"));
+    log(`serving static files from: ${publicPath}`, "static");
+
+    // Robustly find express.static in CJS bundle
+    const exp: any = express;
+    const staticHandler = exp.static || exp.default?.static;
+
+    if (typeof staticHandler === 'function') {
+        app.use(staticHandler(publicPath));
+    } else {
+        log(`express type: ${typeof exp}`, "static");
+        log("CRITICAL: express.static is not a function in this bundle", "static");
+    }
+
+    app.get("*all", (_req, res) => {
+        res.sendFile(indexPath);
     });
 }

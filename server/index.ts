@@ -8,7 +8,9 @@ import { createServer } from "http";
 
 import mongoose from "mongoose";
 
-const app = (express as any).default ? (express as any).default() : (express as any)();
+const exp: any = express;
+const expressApp = exp.default || exp;
+const app = expressApp();
 const httpServer = createServer(app);
 
 
@@ -19,14 +21,14 @@ declare module "http" {
 }
 
 app.use(
-  express.json({
+  expressApp.json({
     verify: (req: any, _res: any, buf: Buffer) => {
       req.rawBody = buf;
     },
   }),
 );
 
-app.use(express.urlencoded({ extended: false }));
+app.use(expressApp.urlencoded({ extended: false }));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
