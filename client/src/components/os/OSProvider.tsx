@@ -215,6 +215,14 @@ export interface SystemDialogState {
   iconType: 'error' | 'warning' | 'info';
 }
 
+export const LARGE_CELL_W = 90;
+export const LARGE_CELL_H = 100;
+export const SMALL_CELL_W = 75;
+export const SMALL_CELL_H = 80;
+export const GRID_PADDING = 16;
+
+export type DesktopIconSize = 'large' | 'small';
+
 export interface DeleteConfirmState {
   isOpen: boolean;
   item: DesktopItem | null;
@@ -253,8 +261,11 @@ interface OSContextType {
   updateDesktopItem: (id: string, updates: Partial<DesktopItem>) => void;
   deleteDesktopItem: (id: string | string[]) => void;
   moveToRecycleBin: (id: string) => void;
+  bulkMoveToRecycleBin: (ids: string[]) => void;
   restoreFromRecycleBin: (id: string) => void;
   permanentlyDelete: (id: string) => void;
+  bulkRestoreFromRecycleBin: (ids: string[]) => void;
+  bulkPermanentlyDelete: (ids: string[]) => void;
   emptyRecycleBin: () => void;
   recycleBinItems: RecycleBinItem[];
   refreshDesktop: () => void;
@@ -272,6 +283,8 @@ interface OSContextType {
   deleteConfirm: DeleteConfirmState;
   showDeleteConfirm: (item: DesktopItem, isPermanent?: boolean) => void;
   hideDeleteConfirm: () => void;
+  desktopIconSize: DesktopIconSize;
+  setDesktopIconSize: (size: DesktopIconSize) => void;
 }
 
 const OSContext = createContext<OSContextType | undefined>(undefined);
@@ -314,11 +327,14 @@ export function OSProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return [];
 
     const saved = localStorage.getItem('win98-desktop-items');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const items = JSON.parse(saved);
+      return items.filter((i: any) => i.id !== 'default-folder-explorer');
+    }
 
     // Initial default items if nothing is saved
     return (Object.keys(APPS) as AppID[])
-      .filter(id => !['terminal', 'certifications', 'achievements', 'project-details', 'notepad'].includes(id))
+      .filter(id => !['terminal', 'certifications', 'achievements', 'project-details', 'notepad', 'folder-explorer'].includes(id))
       .map((id, i) => ({
         id: `default-${id}`,
         appId: id,
@@ -344,6 +360,11 @@ export function OSProvider({ children }: { children: ReactNode }) {
   const [recycleBinHovered, setRecycleBinHovered] = useState(false);
   const [systemDialog, setSystemDialog] = useState<SystemDialogState | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, item: null });
+  const [desktopIconSize, setDesktopIconSize] = useState<DesktopIconSize>(() => {
+    if (typeof window === 'undefined') return 'large';
+    const saved = localStorage.getItem('win98-desktop-icon-size');
+    return (saved as DesktopIconSize) || 'large';
+  });
 
   const showSystemDialog = useCallback((title: string, message: string, iconType: 'error' | 'warning' | 'info' = 'error') => {
     setSystemDialog({ title, message, iconType });
@@ -386,6 +407,25 @@ export function OSProvider({ children }: { children: ReactNode }) {
     setRecycleBinHovered(false);
   }, []);
 
+  const bulkMoveToRecycleBin = useCallback((ids: string[]) => {
+    setDesktopItems(prev => {
+      const itemsToMove = prev.filter(i => ids.includes(i.id) && !(i.isSystem && i.appId));
+      if (itemsToMove.length === 0) return prev;
+
+      const recycleBinEntries: RecycleBinItem[] = itemsToMove.map(item => ({
+        ...item,
+        originalLocation: 'Desktop',
+        deletedAt: Date.now(),
+        originalX: item.x,
+        originalY: item.y,
+      }));
+
+      setRecycleBinItems(rb => [...rb, ...recycleBinEntries]);
+      return prev.filter(i => !itemsToMove.some(m => m.id === i.id));
+    });
+    setRecycleBinHovered(false);
+  }, []);
+
   const restoreFromRecycleBin = useCallback((id: string) => {
     setRecycleBinItems(prev => {
       const item = prev.find(i => i.id === id);
@@ -400,6 +440,24 @@ export function OSProvider({ children }: { children: ReactNode }) {
     setRecycleBinItems(prev => prev.filter(i => i.id !== id));
   }, []);
 
+  const bulkRestoreFromRecycleBin = useCallback((ids: string[]) => {
+    setRecycleBinItems(prev => {
+      const itemsToRestore = prev.filter(i => ids.includes(i.id));
+      const desktopItemsToStore = itemsToRestore.map(({ originalLocation: _loc, deletedAt: _at, originalX, originalY, ...desktopItem }) => ({
+        ...desktopItem,
+        x: originalX,
+        y: originalY,
+        isRenaming: false
+      }));
+      setDesktopItems(d => [...d, ...desktopItemsToStore]);
+      return prev.filter(i => !ids.includes(i.id));
+    });
+  }, []);
+
+  const bulkPermanentlyDelete = useCallback((ids: string[]) => {
+    setRecycleBinItems(prev => prev.filter(i => !ids.includes(i.id)));
+  }, []);
+
   const emptyRecycleBin = useCallback(() => {
     setRecycleBinItems([]);
   }, []);
@@ -407,7 +465,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
   const dropOnRecycleBin = useCallback((id: string) => {
     setDesktopItems(prev => {
       const item = prev.find(i => i.id === id);
-      if (item?.isSystem) {
+      if (item?.isSystem && item?.appId) {
         showSystemDialog("Error", "You cannot delete this system icon.", "error");
         setRecycleBinHovered(false);
         return prev;
@@ -484,10 +542,11 @@ export function OSProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('win98-windows', JSON.stringify(windows));
       localStorage.setItem('win98-desktop-items', JSON.stringify(desktopItems));
       localStorage.setItem('win98-recycle-bin', JSON.stringify(recycleBinItems));
+      localStorage.setItem('win98-desktop-icon-size', desktopIconSize);
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [windows, desktopItems, recycleBinItems]);
+  }, [windows, desktopItems, recycleBinItems, desktopIconSize]);
 
   // Restore dedicated window positions precisely on app load
   useEffect(() => {
@@ -687,6 +746,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
       x: item.x || 100,
       y: item.y || 100,
       isRenaming: item.isRenaming || false,
+      isSystem: false, // Ensure user-created items are NOT system items
       ...item
     }]);
     return id;
@@ -708,9 +768,8 @@ export function OSProvider({ children }: { children: ReactNode }) {
 
   const arrangeIcons = () => {
     setDesktopItems(prev => {
-      const CELL_W = 90;
-      const CELL_H = 98;
-      const GRID_PADDING = 16;
+      const CELL_W = desktopIconSize === 'small' ? SMALL_CELL_W : LARGE_CELL_W;
+      const CELL_H = desktopIconSize === 'small' ? SMALL_CELL_H : LARGE_CELL_H;
       const maxH = window.innerHeight - 80;
       const iconsPerCol = Math.max(1, Math.floor((maxH - GRID_PADDING) / CELL_H));
 
@@ -746,8 +805,11 @@ export function OSProvider({ children }: { children: ReactNode }) {
       updateDesktopItem,
       deleteDesktopItem,
       moveToRecycleBin,
+      bulkMoveToRecycleBin,
       restoreFromRecycleBin,
       permanentlyDelete,
+      bulkRestoreFromRecycleBin,
+      bulkPermanentlyDelete,
       emptyRecycleBin,
       recycleBinItems,
       refreshDesktop,
@@ -764,7 +826,9 @@ export function OSProvider({ children }: { children: ReactNode }) {
       closeSystemDialog,
       deleteConfirm,
       showDeleteConfirm,
-      hideDeleteConfirm
+      hideDeleteConfirm,
+      desktopIconSize,
+      setDesktopIconSize,
     }}>
       <div key={refreshKey} className="theme-win98 contents">
         {children}

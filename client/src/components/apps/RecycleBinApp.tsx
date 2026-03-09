@@ -5,17 +5,17 @@ import { useOS, type RecycleBinItem } from '../os/OSProvider';
 function ItemContextMenu({
     x,
     y,
-    item,
+    selectedItems,
     onClose,
     onRestore,
     onDelete,
 }: {
     x: number;
     y: number;
-    item: RecycleBinItem;
+    selectedItems: RecycleBinItem[];
     onClose: () => void;
-    onRestore: () => void;
-    onDelete: () => void;
+    onRestore: (ids: string[]) => void;
+    onDelete: (items: RecycleBinItem[]) => void;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -26,6 +26,8 @@ function ItemContextMenu({
         return () => document.removeEventListener('mousedown', handler);
     }, [onClose]);
 
+    const isMultiple = selectedItems.length > 1;
+
     return (
         <div
             ref={ref}
@@ -35,15 +37,15 @@ function ItemContextMenu({
             <div className="win98-menu-inner">
                 <div
                     className="win98-menu-item font-bold"
-                    onClick={() => { onRestore(); onClose(); }}
+                    onClick={() => { onRestore(selectedItems.map(i => i.id)); onClose(); }}
                 >
-                    Restore
+                    {isMultiple ? `Restore ${selectedItems.length} items` : 'Restore'}
                 </div>
                 <div
                     className="win98-menu-item"
-                    onClick={() => { onDelete(); onClose(); }}
+                    onClick={() => { onDelete(selectedItems); onClose(); }}
                 >
-                    Delete Permanently
+                    {isMultiple ? `Delete ${selectedItems.length} items permanently` : 'Delete Permanently'}
                 </div>
                 <div className="win98-menu-separator" />
                 <div className="win98-menu-item disabled">Properties</div>
@@ -54,13 +56,15 @@ function ItemContextMenu({
 
 // ─── Main RecycleBin App ─────────────────────────────────────────────────────
 export default function RecycleBinApp({ onClose }: { onClose: () => void }) {
-    const { recycleBinItems, restoreFromRecycleBin, permanentlyDelete, emptyRecycleBin, showDeleteConfirm } = useOS();
+    const { recycleBinItems, restoreFromRecycleBin, permanentlyDelete, emptyRecycleBin, showDeleteConfirm, bulkRestoreFromRecycleBin, bulkPermanentlyDelete } = useOS();
 
-    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
     const [contextMenu, setContextMenu] = useState<{
-        x: number; y: number; item: RecycleBinItem;
+        x: number; y: number; items: RecycleBinItem[];
     } | null>(null);
     const [confirmEmpty, setConfirmEmpty] = useState(false);
+    const [bulkDeleteItems, setBulkDeleteItems] = useState<RecycleBinItem[] | null>(null);
     const [fileMenuOpen, setFileMenuOpen] = useState(false);
 
     const fileMenuRef = useRef<HTMLDivElement>(null);
@@ -75,6 +79,21 @@ export default function RecycleBinApp({ onClose }: { onClose: () => void }) {
         return () => document.removeEventListener('mousedown', handler);
     }, [fileMenuOpen]);
 
+    // Handle Ctrl+A for Select All and Delete for bulk deletion
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                setSelectedIds(recycleBinItems.map(item => item.id));
+            } else if (e.key === 'Delete' && selectedIds.length > 0) {
+                const itemsToDelete = recycleBinItems.filter(i => selectedIds.includes(i.id));
+                setBulkDeleteItems(itemsToDelete);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [recycleBinItems, selectedIds]);
+
     const formatDate = (ts: number) => {
         const d = new Date(ts);
         return d.toLocaleDateString('en-US', {
@@ -82,8 +101,26 @@ export default function RecycleBinApp({ onClose }: { onClose: () => void }) {
         }) + ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     };
 
+    const handleItemClick = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (e.ctrlKey || e.metaKey) {
+            setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+            setLastSelectedId(id);
+        } else if (e.shiftKey && lastSelectedId) {
+            const currentIndex = recycleBinItems.findIndex(i => i.id === id);
+            const lastIndex = recycleBinItems.findIndex(i => i.id === lastSelectedId);
+            const start = Math.min(currentIndex, lastIndex);
+            const end = Math.max(currentIndex, lastIndex);
+            const newSelection = recycleBinItems.slice(start, end + 1).map(i => i.id);
+            setSelectedIds(newSelection);
+        } else {
+            setSelectedIds([id]);
+            setLastSelectedId(id);
+        }
+    };
+
     return (
-        <div className="flex flex-col h-full bg-[#c0c0c0]" onClick={() => setSelectedId(null)}>
+        <div className="flex flex-col h-full bg-[#c0c0c0]" onClick={() => setSelectedIds([])}>
 
             {/* ── File menu bar ─────────────────────────────────────────────── */}
             <div className="relative flex items-center gap-3 px-1 py-[1px] border-b border-[#dfdfdf] shadow-[0_1px_0_#808080] text-[12px] select-none">
@@ -100,6 +137,31 @@ export default function RecycleBinApp({ onClose }: { onClose: () => void }) {
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="win98-menu-inner">
+                                {selectedIds.length > 0 && (
+                                    <>
+                                        <div
+                                            className="win98-menu-item"
+                                            onClick={() => {
+                                                bulkRestoreFromRecycleBin(selectedIds);
+                                                setFileMenuOpen(false);
+                                                setSelectedIds([]);
+                                            }}
+                                        >
+                                            Restore
+                                        </div>
+                                        <div
+                                            className="win98-menu-item"
+                                            onClick={() => {
+                                                const items = recycleBinItems.filter(i => selectedIds.includes(i.id));
+                                                setBulkDeleteItems(items);
+                                                setFileMenuOpen(false);
+                                            }}
+                                        >
+                                            Delete
+                                        </div>
+                                        <div className="win98-menu-separator" />
+                                    </>
+                                )}
                                 <div
                                     className={`win98-menu-item ${recycleBinItems.length === 0 ? 'disabled' : ''}`}
                                     onClick={() => {
@@ -152,25 +214,31 @@ export default function RecycleBinApp({ onClose }: { onClose: () => void }) {
                         </thead>
                         <tbody>
                             {recycleBinItems.map(item => {
-                                const isSelected = selectedId === item.id;
+                                const isSelected = selectedIds.includes(item.id);
                                 return (
                                     <tr
                                         key={item.id}
                                         className={`cursor-default border-b border-[#e0e0e0] ${isSelected ? 'bg-[#000080] text-white' : 'hover:bg-[#d4d4d4] text-black'}`}
-                                        onClick={e => { e.stopPropagation(); setSelectedId(item.id); }}
+                                        onClick={e => handleItemClick(e, item.id)}
                                         onDoubleClick={() => { restoreFromRecycleBin(item.id); }}
                                         onContextMenu={e => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            setSelectedId(item.id);
-                                            setContextMenu({ x: e.clientX, y: e.clientY, item });
+                                            let newSelected = selectedIds;
+                                            if (!selectedIds.includes(item.id)) {
+                                                newSelected = [item.id];
+                                                setSelectedIds([item.id]);
+                                                setLastSelectedId(item.id);
+                                            }
+                                            const items = recycleBinItems.filter(i => newSelected.includes(i.id));
+                                            setContextMenu({ x: e.clientX, y: e.clientY, items });
                                         }}
                                     >
                                         <td className="px-2 py-0.5 flex items-center gap-1.5">
                                             <img
                                                 src={item.iconUrl}
                                                 alt=""
-                                                className={`w-4 h-4 pixelated shrink-0 ${isSelected ? '' : ''}`}
+                                                className="w-4 h-4 pixelated shrink-0"
                                             />
                                             <span className="truncate">{item.name}</span>
                                         </td>
@@ -191,20 +259,63 @@ export default function RecycleBinApp({ onClose }: { onClose: () => void }) {
                     {recycleBinItems.length} object{recycleBinItems.length !== 1 ? 's' : ''}
                 </div>
                 <div className="w-1/3 min-w-[120px] win98-inset px-2 flex items-center">
-                    {selectedId ? '1 object(s) selected' : ' '}
+                    {selectedIds.length > 0 ? `${selectedIds.length} object(s) selected` : ' '}
                 </div>
             </div>
 
-            {/* ── Per-item context menu ──────────────────────────────────────── */}
+            {/* ── Multi-item context menu ──────────────────────────────────────── */}
             {contextMenu && (
                 <ItemContextMenu
                     x={contextMenu.x}
                     y={contextMenu.y}
-                    item={contextMenu.item}
+                    selectedItems={contextMenu.items}
                     onClose={() => setContextMenu(null)}
-                    onRestore={() => restoreFromRecycleBin(contextMenu.item.id)}
-                    onDelete={() => showDeleteConfirm(contextMenu.item, true)}
+                    onRestore={(ids) => {
+                        bulkRestoreFromRecycleBin(ids);
+                        setSelectedIds([]);
+                    }}
+                    onDelete={(items) => {
+                        if (items.length === 1) {
+                            showDeleteConfirm(items[0], true);
+                        } else {
+                            setBulkDeleteItems(items);
+                        }
+                    }}
                 />
+            )}
+
+            {/* Bulk Delete confirmation */}
+            {bulkDeleteItems && (
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-transparent pointer-events-auto">
+                    <div className="win98-window shadow-[4px_4px_15px_rgba(0,0,0,0.5)] w-[360px]">
+                        <div className="h-[18px] px-1 py-[2px] m-[2px] bg-[#000080] flex items-center justify-between select-none">
+                            <span className="text-white text-[11px] font-bold pl-1 uppercase whitespace-nowrap">Confirm Multiple File Delete</span>
+                            <button className="w-4 h-3.5 bg-[#c0c0c0] border-t border-l border-white border-r border-b border-black flex items-center justify-center" onClick={() => setBulkDeleteItems(null)}>
+                                <span className="text-[9px] leading-none font-bold">X</span>
+                            </button>
+                        </div>
+                        <div className="flex items-start gap-4 p-4 bg-[#c0c0c0]">
+                            <div className="shrink-0 mt-1">
+                                <svg width="32" height="32" viewBox="0 0 32 32">
+                                    <polygon points="16,2 30,30 2,30" fill="#FFCC00" stroke="#000" strokeWidth="1.5" />
+                                    <rect x="14.5" y="12" width="3" height="10" fill="#000" />
+                                    <rect x="14.5" y="24" width="3" height="3" fill="#000" />
+                                </svg>
+                            </div>
+                            <p className="text-[12px] text-black leading-tight py-1">
+                                Are you sure you want to delete these {bulkDeleteItems.length} items?
+                            </p>
+                        </div>
+                        <div className="flex justify-end gap-2 p-3 bg-[#c0c0c0]">
+                            <button className="win98-button min-w-[75px] h-[23px] text-xs" onClick={() => {
+                                bulkPermanentlyDelete(bulkDeleteItems.map(i => i.id));
+                                setBulkDeleteItems(null);
+                                setSelectedIds([]);
+                            }}>Yes</button>
+                            <button className="win98-button min-w-[75px] h-[23px] text-xs" onClick={() => setBulkDeleteItems(null)}>No</button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Empty Recycle Bin confirmation */}
@@ -230,7 +341,7 @@ export default function RecycleBinApp({ onClose }: { onClose: () => void }) {
                             </p>
                         </div>
                         <div className="flex justify-end gap-2 p-3 bg-[#c0c0c0]">
-                            <button className="win98-button min-w-[75px] h-[23px] text-xs" onClick={() => { emptyRecycleBin(); setConfirmEmpty(false); }}>Yes</button>
+                            <button className="win98-button min-w-[75px] h-[23px] text-xs" onClick={() => { emptyRecycleBin(); setConfirmEmpty(false); setSelectedIds([]); }}>Yes</button>
                             <button className="win98-button min-w-[75px] h-[23px] text-xs" onClick={() => setConfirmEmpty(false)}>No</button>
                         </div>
                     </div>

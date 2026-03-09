@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useOS, AppID } from './OSProvider';
 
 interface ContextMenuProps {
@@ -16,11 +16,27 @@ interface MenuItem {
     disabled?: boolean;
     bold?: boolean;
     type?: 'separator';
+    checked?: boolean;
 }
 
 export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
-    const { refreshDesktop, arrangeIcons, addDesktopItem, deleteDesktopItem, updateDesktopItem, openWindow, desktopItems, moveToRecycleBin, recycleBinItems, emptyRecycleBin, showSystemDialog, showDeleteConfirm } = useOS();
+    const {
+        refreshDesktop,
+        arrangeIcons,
+        addDesktopItem,
+        deleteDesktopItem,
+        updateDesktopItem,
+        openWindow,
+        desktopItems,
+        moveToRecycleBin,
+        recycleBinItems,
+        emptyRecycleBin,
+        showSystemDialog,
+        showDeleteConfirm,
+        desktopIconSize,
+        setDesktopIconSize
+    } = useOS();
     const [activeSubmenu, setActiveSubmenu] = useState<number | null>(null);
     const submenuTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -34,8 +50,8 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
-    const handleNewFolder = () => {
-        const id = addDesktopItem({
+    const handleNewFolder = useCallback(() => {
+        addDesktopItem({
             name: 'New Folder',
             type: 'folder',
             x: x,
@@ -43,9 +59,9 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
             isRenaming: true
         });
         onClose();
-    };
+    }, [addDesktopItem, x, y, onClose]);
 
-    const handleNewTextFile = () => {
+    const handleNewTextFile = useCallback(() => {
         addDesktopItem({
             name: 'New Text Document.txt',
             type: 'file',
@@ -54,14 +70,29 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
             isRenaming: true
         });
         onClose();
-    };
+    }, [addDesktopItem, x, y, onClose]);
 
     const desktopMenuItems: MenuItem[] = [
-        { label: 'View', hasSubmenu: true, disabled: true },
-        { label: 'Arrange Icons', onClick: () => arrangeIcons() },
-        { label: 'Line Up Icons', onClick: () => arrangeIcons() },
+        {
+            label: 'View',
+            hasSubmenu: true,
+            submenuItems: [
+                {
+                    label: 'Large Icons',
+                    onClick: () => { setDesktopIconSize('large'); onClose(); refreshDesktop(); },
+                    checked: desktopIconSize === 'large'
+                },
+                {
+                    label: 'Small Icons',
+                    onClick: () => { setDesktopIconSize('small'); onClose(); refreshDesktop(); },
+                    checked: desktopIconSize === 'small'
+                },
+            ]
+        },
+        { label: 'Arrange Icons', onClick: () => { arrangeIcons(); onClose(); } },
+        // { label: 'Line Up Icons', onClick: () => { arrangeIcons(); onClose(); } },
         { type: 'separator' },
-        { label: 'Refresh', onClick: () => { arrangeIcons(); refreshDesktop(); } },
+        { label: 'Refresh', onClick: () => { arrangeIcons(); refreshDesktop(); onClose(); } },
         { type: 'separator' },
         { label: 'Paste', disabled: true },
         { label: 'Paste Shortcut', disabled: true },
@@ -119,11 +150,9 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
             {
                 label: 'Delete', onClick: () => {
                     if (targetItemId && targetItem) {
-                        if (targetItem.isSystem) {
+                        if (targetItem.isSystem && targetItem.appId) {
                             showSystemDialog("Error", "You cannot delete this system icon.", "error");
                         } else {
-                            // Using standard browser confirm for simplicity of logic flow here, 
-                            // though showSystemDialog exists, it doesn't currently support callbacks in its state.
                             showDeleteConfirm(targetItem);
                         }
                     }
@@ -167,23 +196,37 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
                     return (
                         <div
                             key={i}
-                            className={`win98-menu-item ${item.disabled ? 'disabled' : ''} ${item.bold ? 'font-bold' : ''} ${isActive && item.hasSubmenu ? 'active' : ''}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (!item.disabled && item.onClick) {
-                                    item.onClick();
-                                }
-                            }}
+                            className={`win98-menu-item-container relative`}
                             onMouseEnter={() => handleMouseEnter(i)}
                         >
-                            <span>{item.label}</span>
-                            {item.hasSubmenu && (
-                                <span className="win98-submenu-arrow">
-                                    <svg width="4" height="7" viewBox="0 0 4 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M0 0V7L4 3.5L0 0Z" fill="currentColor" />
-                                    </svg>
-                                </span>
-                            )}
+                            <div
+                                className={`win98-menu-item ${item.disabled ? 'disabled' : ''} ${item.bold ? 'font-bold' : ''} ${isActive && item.hasSubmenu ? 'active' : ''}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!item.disabled && item.onClick) {
+                                        item.onClick();
+                                    }
+                                }}
+                            >
+                                <div className="flex items-center gap-2">
+                                    {item.checked !== undefined && (
+                                        <div className="w-3 h-3 flex items-center justify-center">
+                                            {item.checked && (
+                                                <span className="text-[10px]">●</span>
+                                            )}
+                                        </div>
+                                    )}
+                                    <span>{item.label}</span>
+                                </div>
+                                {item.hasSubmenu && (
+                                    <span className="win98-submenu-arrow">
+                                        <svg width="4" height="7" viewBox="0 0 4 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M0 0V7L4 3.5L0 0Z" fill="currentColor" />
+                                        </svg>
+                                    </span>
+                                )}
+                            </div>
+
                             {item.hasSubmenu && item.submenuItems && isActive && (
                                 <div className="win98-menu win98-submenu" style={{ left: '100%', top: -2 }}>
                                     <div className="win98-menu-inner">
@@ -202,7 +245,16 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
                                                         }
                                                     }}
                                                 >
-                                                    <span>{subItem.label}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        {subItem.checked !== undefined && (
+                                                            <div className="w-3 h-3 flex items-center justify-center">
+                                                                {subItem.checked && (
+                                                                    <span className="text-[10px]">●</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <span>{subItem.label}</span>
+                                                    </div>
                                                 </div>
                                             );
                                         })}

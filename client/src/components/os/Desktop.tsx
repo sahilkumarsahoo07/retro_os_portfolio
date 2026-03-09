@@ -1,51 +1,19 @@
 import React, { useState, useRef, useCallback, startTransition } from 'react';
-import { useOS, type DesktopItem, type AppID } from './OSProvider';
+import {
+  useOS,
+  type DesktopItem,
+  type AppID,
+  LARGE_CELL_W,
+  LARGE_CELL_H,
+  SMALL_CELL_W,
+  SMALL_CELL_H,
+  GRID_PADDING
+} from './OSProvider';
 import Window from './Window';
 import { AnimatePresence } from 'framer-motion';
 import ContextMenu from './ContextMenu';
 import Win98Dialog from './Win98Dialog';
 import DeleteConfirmDialog from '../apps/DeleteConfirmDialog';
-
-// Grid cell dimensions
-const CELL_W = 90;
-const CELL_H = 98;   // extra height to ensure 2-line labels never overlap
-const GRID_PADDING = 16; // breathing room at screen edges
-
-function pixelToCell(x: number, y: number): { col: number; row: number } {
-  return {
-    col: Math.round((x - GRID_PADDING) / CELL_W),
-    row: Math.round((y - GRID_PADDING) / CELL_H),
-  };
-}
-
-function cellToPixel(col: number, row: number): { x: number; y: number } {
-  return {
-    x: GRID_PADDING + col * CELL_W,
-    y: GRID_PADDING + row * CELL_H,
-  };
-}
-
-function findFreeCell(
-  targetCol: number,
-  targetRow: number,
-  occupiedCells: Set<string>,
-  maxCols: number,
-  maxRows: number
-): { col: number; row: number } {
-  for (let radius = 0; radius <= Math.max(maxCols, maxRows); radius++) {
-    for (let dc = -radius; dc <= radius; dc++) {
-      for (let dr = -radius; dr <= radius; dr++) {
-        if (Math.abs(dc) !== radius && Math.abs(dr) !== radius) continue;
-        const col = targetCol + dc;
-        const row = targetRow + dr;
-        if (col < 0 || row < 0 || col >= maxCols || row >= maxRows) continue;
-        const key = `${col},${row}`;
-        if (!occupiedCells.has(key)) return { col, row };
-      }
-    }
-  }
-  return { col: targetCol, row: targetRow };
-}
 
 export default function Desktop() {
   const {
@@ -58,10 +26,51 @@ export default function Desktop() {
     recycleBinHovered,
     setRecycleBinHovered,
     dropOnRecycleBin,
+    bulkMoveToRecycleBin,
     recycleBinItems,
     systemDialog,
     closeSystemDialog,
+    desktopIconSize,
   } = useOS();
+
+  const CELL_W = desktopIconSize === 'small' ? SMALL_CELL_W : LARGE_CELL_W;
+  const CELL_H = desktopIconSize === 'small' ? SMALL_CELL_H : LARGE_CELL_H;
+
+  const pixelToCell = useCallback((x: number, y: number): { col: number; row: number } => {
+    return {
+      col: Math.round((x - GRID_PADDING) / CELL_W),
+      row: Math.round((y - GRID_PADDING) / CELL_H),
+    };
+  }, [CELL_W, CELL_H]);
+
+  const cellToPixel = useCallback((col: number, row: number): { x: number; y: number } => {
+    return {
+      x: GRID_PADDING + col * CELL_W,
+      y: GRID_PADDING + row * CELL_H,
+    };
+  }, [CELL_W, CELL_H]);
+
+  const findFreeCell = useCallback((
+    targetCol: number,
+    targetRow: number,
+    occupiedCells: Set<string>,
+    maxCols: number,
+    maxRows: number
+  ): { col: number; row: number } => {
+    for (let radius = 0; radius <= Math.max(maxCols, maxRows); radius++) {
+      for (let dc = -radius; dc <= radius; dc++) {
+        for (let dr = -radius; dr <= radius; dr++) {
+          if (Math.abs(dc) !== radius && Math.abs(dr) !== radius) continue;
+          const col = targetCol + dc;
+          const row = targetRow + dr;
+          if (col < 0 || row < 0 || col >= maxCols || row >= maxRows) continue;
+          const key = `${col},${row}`;
+          if (!occupiedCells.has(key)) return { col, row };
+        }
+      }
+    }
+    return { col: targetCol, row: targetRow };
+  }, []);
 
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; targetItemId?: string | null } | null>(null);
@@ -82,9 +91,6 @@ export default function Desktop() {
   // ── Lasso selection ──────────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || e.target !== desktopRef.current) return;
-    desktopItems.forEach(item => {
-      if (item.isRenaming) updateDesktopItem(item.id, { isRenaming: false });
-    });
     setSelectedItems([]);
     isSelecting.current = true;
     const rect = desktopRef.current!.getBoundingClientRect();
@@ -118,6 +124,26 @@ export default function Desktop() {
     isSelecting.current = false;
     setSelection(null);
   };
+
+  // ── Keyboard Shortcuts (Delete) ───────────────────────────────────────────
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle delete if it's the Delete key and items are selected
+      if (e.key === 'Delete' && selectedItems.length > 0) {
+        // Find if any selected items are non-system
+        const deletableIds = desktopItems
+          .filter(i => selectedItems.includes(i.id) && !(i.isSystem && i.appId))
+          .map(i => i.id);
+
+        if (deletableIds.length > 0) {
+          bulkMoveToRecycleBin(deletableIds);
+          setSelectedItems([]);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedItems, desktopItems, bulkMoveToRecycleBin]);
 
   // ── Grid-snapped drag with recycle bin hit-test ───────────────────────────
   const handleIconDragStart = useCallback((
@@ -330,7 +356,8 @@ export default function Desktop() {
                 }
               }}
             >
-              <div className={`w-12 h-12 flex items-center justify-center mb-1 transition-transform duration-100
+              <div className={`flex items-center justify-center mb-1 transition-transform duration-100
+                ${desktopIconSize === 'small' ? 'w-10 h-10' : 'w-12 h-12'}
                 ${isRecycleBin && recycleBinHovered ? 'scale-110' : ''}
                 ${isSelected ? 'opacity-70' : ''}
               `}>
@@ -348,7 +375,8 @@ export default function Desktop() {
                   }
                   alt={item.name}
                   draggable={false}
-                  className={`w-10 h-10 pointer-events-none pixelated
+                  className={`pointer-events-none pixelated
+                    ${desktopIconSize === 'small' ? 'w-8 h-8' : 'w-10 h-10'}
                     ${isSelected ? 'brightness-50 sepia-100 hue-rotate-[200deg] saturate-200' : ''}
                   `}
                 />
