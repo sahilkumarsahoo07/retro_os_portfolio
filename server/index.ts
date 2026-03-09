@@ -5,6 +5,7 @@ import { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import cors from "cors";
 
 import mongoose from "mongoose";
 
@@ -12,6 +13,8 @@ const exp: any = express;
 const expressApp = exp.default || exp;
 const app = expressApp();
 const httpServer = createServer(app);
+
+app.use(cors()); // Enable CORS for all origins, or configure as needed
 
 
 declare module "http" {

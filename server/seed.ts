@@ -76,11 +76,11 @@ const Achievement = mongoose.models["Achievement"] || mongoose.model("Achievemen
 // ─── Seed Data ─────────────────────────────────────────────────────────────────
 
 const profileData = {
-    name: "Sahil Kumar",
-    title: "Full Stack Developer | React | Node.js | Generative AI",
+    name: "Sahil Kumar Sahoo",
+    title: "Frontend & GenAI Developer",
     summary:
-        "Full Stack Developer with around 3 years of experience building scalable web applications using React, Node.js, and modern JavaScript frameworks. Passionate about creating interactive UI/UX experiences and exploring Generative AI technologies. Currently building unique projects such as a Windows 98 style portfolio OS and AI-powered developer tools.",
-    email: "sahilkumarsahoo001@gmail.com",
+        "Frontend and GenAI Developer with 3+ years of experience architecting scalable web applications using React.js, Next.js, and modern JavaScript frameworks. Specialized in engineering AI-powered analytics platforms, multi-agent AI systems, and natural language data interfaces using LLM integrations. Proven ability to deliver enterprise dashboards, workflow automation systems, and intelligent data exploration tools that enable organizations to extract insights from complex datasets.",
+    email: "sksahoo.dev@gmail.com",
     phone: "+91 8327704042",
     linkedin: "https://in.linkedin.com/in/sahil-kumar-sahoo",
     github: "https://github.com/sahilkumarsahoo07"
@@ -88,92 +88,112 @@ const profileData = {
 
 const projectsData = [
     {
+        title: "Lexy AI",
+        description:
+            "Architected an enterprise GenAI analytics platform enabling natural language querying, automated insight generation, dataset modeling, workflow automation, and intelligent dashboard creation for enterprise data analysis.",
+        technologies: [
+            "React.js",
+            "GenAI",
+            "SQL Agents",
+            "ML Agents",
+            "Data Visualization"
+        ],
+        githubLink: "https://github.com/sahilkumarsahoo07",
+        liveDemo: "https://sahilkumarwindow.netlify.app",
+        order: 1
+    },
+    {
+        title: "Multi-Agent AI Platform",
+        description:
+            "Designed a multi-agent AI system where distributed AI agents collaborate to generate contextual responses. Engineered a React-based conversational interface and integrated LLM APIs for agent coordination.",
+        technologies: [
+            "React",
+            "LLM APIs",
+            "Multi-Agent Architecture",
+            "Conversational UI"
+        ],
+        githubLink: "https://github.com/sahilkumarsahoo07",
+        liveDemo: "https://agent-chat-pi.vercel.app/",
+        order: 2
+    },
+    {
         title: "Retro Windows 98 Portfolio OS",
         description:
-            "An interactive portfolio designed as a fully functional Windows 98 operating system inside the browser. Features draggable windows, taskbar, file explorer, recycle bin, and multiple applications built using React and Framer Motion.",
+            "An interactive portfolio designed as a fully functional Windows 98 operating system inside the browser. Features draggable windows, taskbar, file explorer, and multiple applications built using React and Framer Motion.",
         technologies: [
             "React",
             "TypeScript",
             "Framer Motion",
-            "Node.js",
-            "MongoDB",
-            "Tailwind CSS"
+            "Tailwind CSS",
+            "MongoDB"
         ],
         githubLink: "https://github.com/sahilkumarsahoo07/retro_os_portfolio",
-        liveDemo: "https://your-portfolio-link.com",
-        order: 1
-    },
-    {
-        title: "AI Job Scraper Agent",
-        description:
-            "An AI-powered job search automation tool that scans multiple job platforms, filters relevant opportunities, and summarizes job descriptions using LLMs.",
-        technologies: [
-            "Node.js",
-            "OpenAI",
-            "Python",
-            "Web Scraping",
-            "Automation"
-        ],
-        githubLink: "https://github.com/sahilkumarsahoo07",
-        liveDemo: "",
-        order: 2
-    },
-    {
-        title: "AI Assistant Platform",
-        description:
-            "A multi-agent AI assistant platform where users can interact with different AI agents for coding help, research, and automation.",
-        technologies: [
-            "Next.js",
-            "LangChain",
-            "OpenAI",
-            "Vector Databases",
-            "TypeScript"
-        ],
-        githubLink: "https://github.com/sahilkumarsahoo07",
-        liveDemo: "",
+        liveDemo: "https://sahilkumarwindow.netlify.app",
         order: 3
     }
 ];
 
 const skillsData = [
     {
-        category: "Frontend",
+        category: "Frontend Engineering",
         skills: [
-            "React",
+            "React.js",
             "Next.js",
-            "JavaScript",
-            "TypeScript",
+            "JavaScript (ES6+)",
+            "HTML5",
+            "CSS3",
             "Tailwind CSS",
-            "Redux",
-            "Framer Motion"
+            "Bootstrap",
+            "jQuery"
         ]
     },
     {
-        category: "Backend",
+        category: "GenAI & AI Systems",
         skills: [
-            "Node.js",
-            "Express.js",
-            "MongoDB",
-            "REST APIs",
-            "GraphQL"
-        ]
-    },
-    {
-        category: "AI / Generative AI",
-        skills: [
-            "OpenAI APIs",
-            "LangChain",
+            "OpenAI API",
+            "LLM Integration",
+            "AI Agents",
+            "Multi-Agent Architectures",
             "Prompt Engineering",
-            "Vector Databases"
+            "AI Chat Interfaces"
         ]
     },
     {
-        category: "Tools & DevOps",
+        category: "Architecture & Performance",
+        skills: [
+            "Component-Based Architecture",
+            "Responsive Design",
+            "Cross-Browser Compatibility",
+            "Code Splitting",
+            "Lazy Loading",
+            "Performance Optimization"
+        ]
+    },
+    {
+        category: "Analytics & Visualization",
+        skills: [
+            "Interactive Dashboards",
+            "Data Visualization",
+            "Google Charts",
+            "Analytics Reporting"
+        ]
+    },
+    {
+        category: "Backend & Data Integration",
+        skills: [
+            "REST APIs",
+            "JSON APIs",
+            "Python API Integration",
+            "Database Connectivity"
+        ]
+    },
+    {
+        category: "Tools & Workflow",
         skills: [
             "Git",
-            "Docker",
-            "AWS",
-            "Linux",
+            "GitHub",
+            "Agile Development",
+            "NPM",
             "Vercel"
         ]
     }
@@ -181,38 +201,51 @@ const skillsData = [
 
 const experienceData = [
     {
-        company: "Phenom Cloud",
-        role: "Software Design Engineer - 1",
-        duration: "2023 - Present",
+        company: "Phenom Cloud India Pvt Ltd",
+        role: "Software Design Engineer – I",
+        duration: "May 2023 – Present",
         description:
-            "Working on building modern web applications using React and Node.js. Developed multiple UI components, optimized performance, and collaborated with backend teams to deliver scalable products."
+            "Spearheaded development of enterprise analytics dashboards for global clients. Optimized performance by 30% through code splitting and architecture improvements. Architected Lexy AI and engineered AI-powered SQL/ML agents. Orchestrated data modeling pipelines and automated workflow pipelines."
+    },
+    {
+        company: "Phenom Cloud India Pvt Ltd",
+        role: "Software Design Engineer – Trainee",
+        duration: "2022 - 2023",
+        description:
+            "Engineered responsive learner and manager analytics dashboards using JavaScript, HTML5, CSS3, and Bootstrap. Integrated Google Charts for interactive reporting and enhanced UX through optimized frontend architecture."
     }
 ];
 
 const certificationsData = [
     {
-        name: "Full Stack Web Development",
-        issuer: "Coursera",
-        year: "2020"
+        name: "Java Full Stack Skills & Training",
+        issuer: "QSpiders",
+        year: "2022"
     },
     {
-        name: "AWS Certified Developer",
-        issuer: "Amazon Web Services",
+        name: "Bachelor of Science (Physics)",
+        issuer: "Utkal University",
         year: "2021"
     }
 ];
 
 const achievementsData = [
     {
-        title: "Built a Full Windows 98 Style Portfolio OS",
+        title: "Top Performer Award (2024)",
         description:
-            "Created a unique interactive portfolio designed as a Windows 98 operating system using React and TypeScript.",
-        date: "2025"
+            "Received for delivering high-impact enterprise frontend solutions at Phenom Cloud.",
+        date: "2024"
     },
     {
-        title: "AI Developer Projects",
+        title: "UI/UX Innovation",
         description:
-            "Developed several AI-based tools using OpenAI APIs and automation workflows.",
+            "Designed custom React and CSS carousel animations improving UI engagement.",
+        date: "2024"
+    },
+    {
+        title: "Mentorship",
+        description:
+            "Mentored junior developers and promoted scalable frontend engineering practices.",
         date: "2024"
     }
 ];
