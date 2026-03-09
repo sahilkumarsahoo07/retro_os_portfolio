@@ -14,7 +14,10 @@ const expressApp = exp.default || exp;
 const app = expressApp();
 const httpServer = createServer(app);
 
-app.use(cors()); // Enable CORS for all origins, or configure as needed
+app.use(cors({
+  origin: "https://sahilkumarwindow.netlify.app",
+  credentials: true,
+}));
 
 
 declare module "http" {

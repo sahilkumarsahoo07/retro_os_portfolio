@@ -7,7 +7,7 @@ export function useSkills() {
     return useQuery({
         queryKey: [api.skills.list.path],
         queryFn: async () => {
-            const res = await fetch(API_BASE_URL + api.skills.list.path, { credentials: "include" });
+            const res = await fetch(API_BASE_URL + api.skills.list.path);
             if (!res.ok) throw new Error("Failed to fetch skills");
             return res.json();
         },

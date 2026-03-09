@@ -7,7 +7,7 @@ export function useGallery() {
   return useQuery({
     queryKey: [api.gallery.list.path],
     queryFn: async () => {
-      const res = await fetch(API_BASE_URL + api.gallery.list.path, { credentials: "include" });
+      const res = await fetch(API_BASE_URL + api.gallery.list.path);
       if (!res.ok) {
         throw new Error("Failed to fetch gallery");
       }

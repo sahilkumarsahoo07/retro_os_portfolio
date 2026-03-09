@@ -11,7 +11,6 @@ export function useCreateMessage() {
         method: api.messages.create.method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(validated),
-        credentials: "include",
       });
 
       if (!res.ok) {

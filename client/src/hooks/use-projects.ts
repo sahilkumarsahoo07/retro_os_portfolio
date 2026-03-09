@@ -7,7 +7,7 @@ export function useProjects() {
   return useQuery({
     queryKey: [api.projects.list.path],
     queryFn: async () => {
-      const res = await fetch(API_BASE_URL + api.projects.list.path, { credentials: "include" });
+      const res = await fetch(API_BASE_URL + api.projects.list.path);
       if (!res.ok) {
         throw new Error("Failed to fetch projects");
       }

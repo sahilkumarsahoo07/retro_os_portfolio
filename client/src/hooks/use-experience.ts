@@ -7,7 +7,7 @@ export function useExperience() {
     return useQuery({
         queryKey: [api.experience.list.path],
         queryFn: async () => {
-            const res = await fetch(API_BASE_URL + api.experience.list.path, { credentials: "include" });
+            const res = await fetch(API_BASE_URL + api.experience.list.path);
             if (!res.ok) throw new Error("Failed to fetch experience");
             return res.json();
         },
