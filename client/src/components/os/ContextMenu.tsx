@@ -125,19 +125,12 @@ export default function ContextMenu({ x, y, targetItemId, parentId, onClose }: C
             label: 'Open',
             bold: true,
             onClick: () => {
-                const { startTransition } = React;
                 if (targetItem?.appId) {
-                    startTransition(() => {
-                        openWindow(targetItem.appId as AppID);
-                    });
+                    openWindow(targetItem.appId as AppID);
                 } else if (targetItem?.name.toLowerCase().endsWith('.txt')) {
-                    startTransition(() => {
-                        openWindow('notepad', { item: targetItem }, targetItem.id);
-                    });
+                    openWindow('notepad', { item: targetItem }, targetItem.id);
                 } else if (targetItem?.type === 'folder') {
-                    startTransition(() => {
-                        openWindow('folder-explorer', { item: targetItem }, targetItem.id);
-                    });
+                    openWindow('folder-explorer', { item: targetItem }, targetItem.id);
                 }
                 onClose();
             }

@@ -191,6 +191,17 @@ export const ExplorerStatusBar = ({ objectCount, bytesCount, contextName }: { ob
 );
 
 // ─── Content Area ──────────────────────────────────────────────────────────────
+export interface ExplorerItem {
+  id: string;
+  name: string;
+  iconUrl: string;
+  type?: string;
+  isRenaming?: boolean;
+  content?: string;
+  onClick?: () => void;
+  onDoubleClick?: () => void;
+}
+
 export const ExplorerContent = ({
   items,
   selectedId,
@@ -199,12 +210,12 @@ export const ExplorerContent = ({
   onContextMenu,
   onRename
 }: {
-  items: DesktopItem[];
+  items: (DesktopItem | ExplorerItem)[];
   selectedId: string | null;
-  onSelect: (id: string | null) => void;
-  onDoubleClickItem: (item: DesktopItem) => void;
-  onContextMenu: (e: React.MouseEvent, item?: DesktopItem) => void;
-  onRename: (id: string, newName: string) => void;
+  onSelect?: (id: string | null) => void;
+  onDoubleClickItem?: (item: any) => void;
+  onContextMenu?: (e: React.MouseEvent, item?: any) => void;
+  onRename?: (id: string, newName: string) => void;
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -228,15 +239,17 @@ export const ExplorerContent = ({
   }, [editingId]);
 
   const handleFinishRename = (id: string) => {
-    onRename(id, editValue);
+    if (onRename) {
+      onRename(id, editValue);
+    }
     setEditingId(null);
   };
 
   return (
     <div
       className="flex-1 bg-white border-2 border-t-[#808080] border-l-[#808080] border-b-[#fff] border-r-[#fff] m-1 overflow-auto p-2 min-h-[150px]"
-      onClick={() => onSelect(null)}
-      onContextMenu={(e) => onContextMenu(e)}
+      onClick={() => onSelect?.(null)}
+      onContextMenu={(e) => onContextMenu?.(e)}
     >
       {items.length === 0 ? (
         <div className="flex items-center justify-center h-full text-gray-500 text-sm italic select-none min-h-[120px]">
@@ -254,17 +267,24 @@ export const ExplorerContent = ({
                 className="flex flex-col items-center w-20 p-1 group cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onSelect(item.id);
+                  onSelect?.(item.id);
+                  (item as ExplorerItem).onClick?.();
                 }}
                 onDoubleClick={(e) => {
                   e.stopPropagation();
-                  onDoubleClickItem(item);
+                  if ((item as ExplorerItem).onDoubleClick) {
+                    (item as ExplorerItem).onDoubleClick!();
+                  } else if (onDoubleClickItem) {
+                    onDoubleClickItem(item as DesktopItem);
+                  }
                 }}
                 onContextMenu={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onSelect(item.id);
-                  onContextMenu(e, item);
+                  if (onContextMenu) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onSelect?.(item.id);
+                    onContextMenu(e, item as DesktopItem);
+                  }
                 }}
               >
                 <div className="relative mb-1">

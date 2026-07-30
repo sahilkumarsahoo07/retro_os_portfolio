@@ -333,25 +333,19 @@ export default function Desktop() {
 
                 // If it has a specific appId, open that
                 if (item.appId) {
-                  startTransition(() => {
-                    openWindow(item.appId as AppID);
-                  });
+                  openWindow(item.appId as AppID);
                   return;
                 }
 
                 // If it's a .txt file, open in Notepad
                 if (item.name.toLowerCase().endsWith('.txt')) {
-                  startTransition(() => {
-                    openWindow('notepad', { item }, item.id);
-                  });
+                  openWindow('notepad', { item }, item.id);
                   return;
                 }
 
                 // If it's a folder, open in Explorer
                 if (item.type === 'folder') {
-                  startTransition(() => {
-                    openWindow('folder-explorer', { item }, item.id);
-                  });
+                  openWindow('folder-explorer', { item }, item.id);
                   return;
                 }
               }}
