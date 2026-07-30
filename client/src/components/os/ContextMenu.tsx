@@ -6,6 +6,7 @@ interface ContextMenuProps {
     x: number;
     y: number;
     targetItemId?: string | null;
+    parentId?: string | null;
     onClose: () => void;
 }
 
@@ -20,7 +21,7 @@ interface MenuItem {
     checked?: boolean;
 }
 
-export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenuProps) {
+export default function ContextMenu({ x, y, targetItemId, parentId, onClose }: ContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
     const {
         refreshDesktop,
@@ -56,23 +57,25 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
         addDesktopItem({
             name: 'New Folder',
             type: 'folder',
+            parentId: parentId || null,
             x: x,
             y: y,
             isRenaming: true
         });
         onClose();
-    }, [addDesktopItem, x, y, onClose]);
+    }, [addDesktopItem, parentId, x, y, onClose]);
 
     const handleNewTextFile = useCallback(() => {
         addDesktopItem({
             name: 'New Text Document.txt',
             type: 'file',
+            parentId: parentId || null,
             x: x,
             y: y,
             isRenaming: true
         });
         onClose();
-    }, [addDesktopItem, x, y, onClose]);
+    }, [addDesktopItem, parentId, x, y, onClose]);
 
     const desktopMenuItems: MenuItem[] = [
         {

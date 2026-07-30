@@ -276,7 +276,7 @@ export default function Desktop() {
 
       {/* ── Desktop Icons — z-10, pointer-events inside ─────────────────── */}
       <div className="absolute inset-0 select-none z-10 pointer-events-none">
-        {desktopItems.map((item) => {
+        {desktopItems.filter(item => !item.parentId).map((item) => {
           const isSelected = selectedItems.includes(item.id);
           const isRenaming = item.isRenaming;
           const isRecycleBin = item.appId === 'recycle-bin';

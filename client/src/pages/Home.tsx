@@ -8,7 +8,11 @@ import ShutdownScreen from '@/components/os/ShutdownScreen';
 import { playShutdownSound } from '@/lib/soundEffects';
 
 function OSContent() {
-  const [booted, setBooted] = useState(false);
+  const [booted, setBooted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('win98-booted') === 'true';
+  });
+
   const {
     isShutdown,
     setIsShutdown,
@@ -17,8 +21,14 @@ function OSContent() {
     soundEnabled,
   } = useOS();
 
+  const handleBootComplete = () => {
+    sessionStorage.setItem('win98-booted', 'true');
+    setBooted(true);
+  };
+
   const handleConfirmShutdown = (action: 'shutdown' | 'restart') => {
     playShutdownSound(soundEnabled);
+    sessionStorage.removeItem('win98-booted');
     if (action === 'shutdown') {
       setIsShutdown(true);
     } else if (action === 'restart') {
@@ -27,6 +37,7 @@ function OSContent() {
   };
 
   const handlePowerOn = () => {
+    sessionStorage.removeItem('win98-booted');
     setIsShutdown(false);
     setBooted(false);
   };
@@ -36,7 +47,7 @@ function OSContent() {
   }
 
   if (!booted) {
-    return <BootSequence onComplete={() => setBooted(true)} />;
+    return <BootSequence onComplete={handleBootComplete} />;
   }
 
   return (
