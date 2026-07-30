@@ -11,6 +11,14 @@ import RecycleBinApp from '../apps/RecycleBinApp';
 import IEApp from '../apps/IEApp';
 import ProjectDetailsApp from '../apps/ProjectDetailsApp';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  playOpenSound,
+  playCloseSound,
+  playMinimizeSound,
+  playMaximizeSound,
+  playErrorSound,
+  playRecycleBinSound,
+} from '../../lib/soundEffects';
 
 export type AppID = 'my-computer' | 'my-documents' | 'network' | 'recycle-bin' | 'ie' | 'about' | 'projects' | 'experience' | 'skills' | 'contact' | 'terminal' | 'certifications' | 'achievements' | 'project-details' | 'notepad' | 'folder-explorer';
 
@@ -367,16 +375,18 @@ export function OSProvider({ children }: { children: ReactNode }) {
   });
 
   const showSystemDialog = useCallback((title: string, message: string, iconType: 'error' | 'warning' | 'info' = 'error') => {
+    playErrorSound(soundEnabled);
     setSystemDialog({ title, message, iconType });
-  }, []);
+  }, [soundEnabled]);
 
   const closeSystemDialog = useCallback(() => {
     setSystemDialog(null);
   }, []);
 
   const showDeleteConfirm = useCallback((item: DesktopItem, isPermanent: boolean = false) => {
+    playErrorSound(soundEnabled);
     setDeleteConfirm({ isOpen: true, item, isPermanent });
-  }, []);
+  }, [soundEnabled]);
 
   const hideDeleteConfirm = useCallback(() => {
     setDeleteConfirm({ isOpen: false, item: null });
@@ -391,6 +401,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
   }, [recycleBinItems]);
 
   const moveToRecycleBin = useCallback((id: string) => {
+    playRecycleBinSound(soundEnabled);
     setDesktopItems(prev => {
       const item = prev.find(i => i.id === id);
       if (!item) return prev;
@@ -405,9 +416,10 @@ export function OSProvider({ children }: { children: ReactNode }) {
       return prev.filter(i => i.id !== id);
     });
     setRecycleBinHovered(false);
-  }, []);
+  }, [soundEnabled]);
 
   const bulkMoveToRecycleBin = useCallback((ids: string[]) => {
+    playRecycleBinSound(soundEnabled);
     setDesktopItems(prev => {
       const itemsToMove = prev.filter(i => ids.includes(i.id) && !(i.isSystem && i.appId));
       if (itemsToMove.length === 0) return prev;
@@ -424,9 +436,10 @@ export function OSProvider({ children }: { children: ReactNode }) {
       return prev.filter(i => !itemsToMove.some(m => m.id === i.id));
     });
     setRecycleBinHovered(false);
-  }, []);
+  }, [soundEnabled]);
 
   const restoreFromRecycleBin = useCallback((id: string) => {
+    playOpenSound(soundEnabled);
     setRecycleBinItems(prev => {
       const item = prev.find(i => i.id === id);
       if (!item) return prev;
@@ -434,13 +447,15 @@ export function OSProvider({ children }: { children: ReactNode }) {
       setDesktopItems(d => [...d, { ...desktopItem, x: originalX, y: originalY, isRenaming: false }]);
       return prev.filter(i => i.id !== id);
     });
-  }, []);
+  }, [soundEnabled]);
 
   const permanentlyDelete = useCallback((id: string) => {
+    playRecycleBinSound(soundEnabled);
     setRecycleBinItems(prev => prev.filter(i => i.id !== id));
-  }, []);
+  }, [soundEnabled]);
 
   const bulkRestoreFromRecycleBin = useCallback((ids: string[]) => {
+    playOpenSound(soundEnabled);
     setRecycleBinItems(prev => {
       const itemsToRestore = prev.filter(i => ids.includes(i.id));
       const desktopItemsToStore = itemsToRestore.map(({ originalLocation: _loc, deletedAt: _at, originalX, originalY, ...desktopItem }) => ({
@@ -452,15 +467,17 @@ export function OSProvider({ children }: { children: ReactNode }) {
       setDesktopItems(d => [...d, ...desktopItemsToStore]);
       return prev.filter(i => !ids.includes(i.id));
     });
-  }, []);
+  }, [soundEnabled]);
 
   const bulkPermanentlyDelete = useCallback((ids: string[]) => {
+    playRecycleBinSound(soundEnabled);
     setRecycleBinItems(prev => prev.filter(i => !ids.includes(i.id)));
-  }, []);
+  }, [soundEnabled]);
 
   const emptyRecycleBin = useCallback(() => {
+    playRecycleBinSound(soundEnabled);
     setRecycleBinItems([]);
-  }, []);
+  }, [soundEnabled]);
 
   const dropOnRecycleBin = useCallback((id: string) => {
     setDesktopItems(prev => {
@@ -589,6 +606,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
   };
 
   const openWindow = (appId: AppID, params?: any, instanceId?: string) => {
+    playOpenSound(soundEnabled);
     const id = instanceId || appId;
     setWindows(prev => {
       const exists = prev.find(w => w.id === id);
@@ -669,14 +687,17 @@ export function OSProvider({ children }: { children: ReactNode }) {
   };
 
   const closeWindow = (instanceId: string) => {
+    playCloseSound(soundEnabled);
     setWindows(prev => prev.map(w => w.id === instanceId ? { ...w, isOpen: false, lastTrigger: 'close' } : w));
   };
 
   const minimizeWindow = (instanceId: string) => {
+    playMinimizeSound(soundEnabled);
     setWindows(prev => prev.map(w => w.id === instanceId ? { ...w, isMinimized: true, lastTrigger: 'minimize' } : w));
   };
 
   const restoreWindow = (instanceId: string) => {
+    playMaximizeSound(soundEnabled);
     setWindows(prev => {
       const w = prev.find(window => window.id === instanceId);
       if (!w) return prev;
@@ -703,6 +724,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleMaximize = (instanceId: string) => {
+    playMaximizeSound(soundEnabled);
     setWindows(prev => {
       const topZ = getTopZIndex() + 1;
       return prev.map(w => w.id === instanceId ? { ...w, isMaximized: !w.isMaximized, zIndex: topZ } : w);

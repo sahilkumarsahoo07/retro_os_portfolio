@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useOS, AppID } from './OSProvider';
+import { playMenuClickSound } from '@/lib/soundEffects';
 
 interface ContextMenuProps {
     x: number;
@@ -35,7 +36,8 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
         showSystemDialog,
         showDeleteConfirm,
         desktopIconSize,
-        setDesktopIconSize
+        setDesktopIconSize,
+        soundEnabled
     } = useOS();
     const [activeSubmenu, setActiveSubmenu] = useState<number | null>(null);
     const submenuTimer = useRef<NodeJS.Timeout | null>(null);
@@ -204,6 +206,7 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!item.disabled && item.onClick) {
+                                        playMenuClickSound(soundEnabled);
                                         item.onClick();
                                     }
                                 }}
@@ -241,6 +244,7 @@ export default function ContextMenu({ x, y, targetItemId, onClose }: ContextMenu
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (!subItem.disabled && subItem.onClick) {
+                                                            playMenuClickSound(soundEnabled);
                                                             subItem.onClick();
                                                         }
                                                     }}

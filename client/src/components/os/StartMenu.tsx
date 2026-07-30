@@ -2,9 +2,10 @@ import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOS, APPS, type AppID } from './OSProvider';
 import { Power } from 'lucide-react';
+import { playMenuClickSound, playShutdownSound } from '@/lib/soundEffects';
 
 export default function StartMenu({ onClose }: { onClose: () => void }) {
-  const { openWindow } = useOS();
+  const { openWindow, soundEnabled } = useOS();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,8 +21,16 @@ export default function StartMenu({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   const handleAppClick = (id: AppID) => {
+    playMenuClickSound(soundEnabled);
     openWindow(id);
     onClose();
+  };
+
+  const handleShutdown = () => {
+    playShutdownSound(soundEnabled);
+    setTimeout(() => {
+      window.location.reload();
+    }, 1200);
   };
 
   return (
@@ -74,7 +83,7 @@ export default function StartMenu({ onClose }: { onClose: () => void }) {
 
           <button
             className="flex items-center gap-3 px-3 py-[6px] hover:bg-[#000080] hover:text-white text-black w-full text-left outline-none pr-8 cursor-pointer"
-            onClick={() => window.location.reload()}
+            onClick={handleShutdown}
           >
             <div className="w-8 h-8 flex items-center justify-center shrink-0">
               <Power size={24} className="stroke-current" />

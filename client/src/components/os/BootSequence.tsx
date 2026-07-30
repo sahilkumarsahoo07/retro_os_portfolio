@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { playStartupSound } from '@/lib/soundEffects';
+import { useOS } from './OSProvider';
 
 type BootPhase = 'BIOS' | 'WELCOME' | 'WIN98' | 'DONE';
 
@@ -43,6 +45,7 @@ const BIOS_LOGS = [
 ];
 
 export default function BootSequence({ onComplete }: { onComplete: () => void }) {
+  const { soundEnabled } = useOS();
   const [phase, setPhase] = useState<BootPhase>('BIOS');
   const [visibleLines, setVisibleLines] = useState<number>(0);
   const [visibleChars, setVisibleChars] = useState<number>(0);
@@ -104,12 +107,14 @@ export default function BootSequence({ onComplete }: { onComplete: () => void })
   useEffect(() => {
     if (phase !== 'WIN98') return;
 
+    playStartupSound(soundEnabled);
+
     const timeout = setTimeout(() => {
       setPhase('DONE');
       setTimeout(onComplete, 500);
     }, 4500); // 4.5s for Win98 screen
     return () => clearTimeout(timeout);
-  }, [phase, onComplete]);
+  }, [phase, onComplete, soundEnabled]);
 
   return (
     <div className="fixed inset-0 bg-black z-[99999] overflow-hidden" style={{ cursor: 'none' }}>
