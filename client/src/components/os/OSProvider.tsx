@@ -18,6 +18,7 @@ import {
   playMaximizeSound,
   playErrorSound,
   playRecycleBinSound,
+  playShutdownSound,
 } from '../../lib/soundEffects';
 
 export type AppID = 'my-computer' | 'my-documents' | 'network' | 'recycle-bin' | 'ie' | 'about' | 'projects' | 'experience' | 'skills' | 'contact' | 'terminal' | 'certifications' | 'achievements' | 'project-details' | 'notepad' | 'folder-explorer';
@@ -293,6 +294,11 @@ interface OSContextType {
   hideDeleteConfirm: () => void;
   desktopIconSize: DesktopIconSize;
   setDesktopIconSize: (size: DesktopIconSize) => void;
+  isShutdown: boolean;
+  setIsShutdown: (val: boolean) => void;
+  isShutdownDialogOpen: boolean;
+  openShutdownDialog: () => void;
+  closeShutdownDialog: () => void;
 }
 
 const OSContext = createContext<OSContextType | undefined>(undefined);
@@ -373,6 +379,16 @@ export function OSProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('win98-desktop-icon-size');
     return (saved as DesktopIconSize) || 'large';
   });
+  const [isShutdown, setIsShutdown] = useState(false);
+  const [isShutdownDialogOpen, setIsShutdownDialogOpen] = useState(false);
+
+  const openShutdownDialog = useCallback(() => {
+    setIsShutdownDialogOpen(true);
+  }, []);
+
+  const closeShutdownDialog = useCallback(() => {
+    setIsShutdownDialogOpen(false);
+  }, []);
 
   const showSystemDialog = useCallback((title: string, message: string, iconType: 'error' | 'warning' | 'info' = 'error') => {
     playErrorSound(soundEnabled);
@@ -851,6 +867,11 @@ export function OSProvider({ children }: { children: ReactNode }) {
       hideDeleteConfirm,
       desktopIconSize,
       setDesktopIconSize,
+      isShutdown,
+      setIsShutdown,
+      isShutdownDialogOpen,
+      openShutdownDialog,
+      closeShutdownDialog,
     }}>
       <div key={refreshKey} className="theme-win98 contents">
         {children}

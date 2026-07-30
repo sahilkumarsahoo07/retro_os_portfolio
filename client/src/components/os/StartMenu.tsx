@@ -5,7 +5,7 @@ import { Power } from 'lucide-react';
 import { playMenuClickSound, playShutdownSound } from '@/lib/soundEffects';
 
 export default function StartMenu({ onClose }: { onClose: () => void }) {
-  const { openWindow, soundEnabled } = useOS();
+  const { openWindow, soundEnabled, openShutdownDialog } = useOS();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,10 +27,9 @@ export default function StartMenu({ onClose }: { onClose: () => void }) {
   };
 
   const handleShutdown = () => {
-    playShutdownSound(soundEnabled);
-    setTimeout(() => {
-      window.location.reload();
-    }, 1200);
+    playMenuClickSound(soundEnabled);
+    openShutdownDialog();
+    onClose();
   };
 
   return (
